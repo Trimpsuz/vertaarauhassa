@@ -222,4 +222,6 @@ export const trainTypeMap = new Map<string, string>([
   ['PYO', 'Yöjuna'],
   ['S', 'Pendolino'],
   ['JLA', 'Ratatyöbussi'],
+  ['BLV', 'Ratatyöbussi'],
+  ['HDM', 'Kiskobussi'],
 ]);
