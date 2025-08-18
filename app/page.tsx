@@ -7,7 +7,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Check, ChevronsUpDown, MapPin, Navigation, Calendar, ArrowLeft, Users, Minus, Plus, Info, Shuffle, TrainFront, Car, Clock, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, MapPin, Navigation, Calendar, ArrowLeft, Users, Minus, Plus, Info, Shuffle, TrainFront, Clock, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { cn, formatTime } from '@/lib/utils';
 import { stationMap } from '@/lib/constants';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -15,12 +15,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { createSale, searchJourney } from '@/lib/api';
 import { toast } from 'sonner';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import SpaceLimited from '@/components/ui/icons/SpaceLimited';
 import SpaceModerate from '@/components/ui/icons/SpaceModerate';
 import SpacePlenty from '@/components/ui/icons/SpacePlenty';
 import { Tooltip } from '@radix-ui/react-tooltip';
 import { TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['800'],
+});
 
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -203,7 +209,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">VertaaRauhassa</CardTitle>
+            <CardTitle className={`text-2xl font-bold ${poppins.className}`}>VertaaRauhassa</CardTitle>
             <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Matkustajien määrä' : ''}</CardDescription>
             <div className="flex justify-center gap-2 mt-4">
               <div className={cn('w-8 h-2 rounded-full', currentStep >= 1 ? 'bg-primary' : 'bg-muted')} />
@@ -471,7 +477,7 @@ export default function HomePage() {
   } else {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4 flex-col gap-4">
-        <h1 className="text-2xl font-semibold">
+        <h1 className={`text-2xl font-bold ${poppins.className}`}>
           {searchResults[0].departureStationName} - {searchResults[0].arrivalStationName}
         </h1>
         <div className="flex flex-col gap-2 w-full max-w-[60%]">
