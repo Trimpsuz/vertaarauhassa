@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -37,6 +37,36 @@ export default function HomePage() {
   const [allowCommuter, setAllowCommuter] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [filteredSearchResults, setFilteredSearchResults] = useState<any>([]);
+
+  useEffect(() => {
+    console.log(changeCount);
+
+    const filterSearchResults = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return searchResults.filter((result: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isPendolino = result.legs.some((leg: any) => leg.trainType === 'S');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isInterCity = result.legs.some((leg: any) => leg.trainType === 'IC');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isBus = result.legs.some((leg: any) => leg.trainType === 'JLA');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isNight = result.legs.some((leg: any) => leg.trainType === 'PYO');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isCommuter = result.legs.some((leg: any) => leg.trainType === 'LOL');
+
+        const matchesType = (!isPendolino || allowPendolino) && (!isInterCity || allowInterCity) && (!isBus || allowBus) && (!isNight || allowNight) && (!isCommuter || allowCommuter);
+
+        const matchesTransfers = changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
+
+        return matchesType && matchesTransfers;
+      });
+    };
+
+    setFilteredSearchResults(filterSearchResults);
+  }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, changeCount]);
 
   const createdSales = new Map<string, string>();
 
@@ -97,6 +127,7 @@ export default function HomePage() {
     }
     if (currentStep === 4) {
       setSearchResults([]);
+      setFilteredSearchResults([]);
       createdSales.clear();
     }
   };
@@ -119,7 +150,7 @@ export default function HomePage() {
 
   const isStep1Valid = origin && destination && origin !== destination;
   const isStep2Valid = startDate && endDate;
-  const isStep3Valid = true;
+  const isStep3Valid = 19 > adults + children + seniors + students + conscripts && adults + children + seniors + students + conscripts > 0;
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -129,7 +160,7 @@ export default function HomePage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">VertaaRauhassa</CardTitle>
-            <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Rajaa hakua' : ''}</CardDescription>
+            <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Matkustajien määrä' : ''}</CardDescription>
             <div className="flex justify-center gap-2 mt-4">
               <div className={cn('w-8 h-2 rounded-full', currentStep >= 1 ? 'bg-primary' : 'bg-muted')} />
               <div className={cn('w-8 h-2 rounded-full', currentStep >= 2 ? 'bg-primary' : 'bg-muted')} />
@@ -249,7 +280,7 @@ export default function HomePage() {
                     Takaisin
                   </Button>
                   <Button onClick={handleNextStep} disabled={!isStep2Valid} className="flex-1" size="lg">
-                    Seuraava: Rajaa hakua
+                    Seuraava: Matkustajien määrä
                   </Button>
                 </div>
               </>
@@ -358,66 +389,6 @@ export default function HomePage() {
                       </AlertDescription>
                     </Alert>
                   )}
-
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Shuffle className="h-4 w-4" />
-                    Vaihtojen määrä
-                  </Label>
-
-                  <RadioGroup value={changeCount} onValueChange={setChangeCount} defaultValue="any">
-                    <div className="flex items-center space-x-2 cursor-pointer">
-                      <RadioGroupItem className="cursor-pointer" value="any" id="option-any" />
-                      <Label className="cursor-pointer" htmlFor="option-any">
-                        Kaikki
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 cursor-pointer">
-                      <RadioGroupItem className="cursor-pointer" value="direct" id="option-direct" />
-                      <Label className="cursor-pointer" htmlFor="option-direct">
-                        Vain suorat
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 cursor-pointer">
-                      <RadioGroupItem className="cursor-pointer" value="one" id="option-one" />
-                      <Label className="cursor-pointer" htmlFor="option-one">
-                        Yksi tai vähemmän
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 cursor-pointer">
-                      <RadioGroupItem className="cursor-pointer" value="two" id="option-two" />
-                      <Label className="cursor-pointer" htmlFor="option-two">
-                        Kaksi tai vähemmän
-                      </Label>
-                    </div>
-                  </RadioGroup>
-
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <TrainFront className="h-4 w-4" />
-                    Junatyypit
-                  </Label>
-
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
-                      <Label>Pendolino</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
-                      <Label>InterCity</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
-                      <Label>Yöjuna</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
-                      <Label>Lähijuna</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
-                      <Label>Ratatyöbussi</Label>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2">
@@ -455,71 +426,140 @@ export default function HomePage() {
     );
   } else {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 flex-col gap-2">
-        <h1 className="text-2xl font-semibold pb-2">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 flex-col gap-4">
+        <h1 className="text-2xl font-semibold">
           {searchResults[0].departureStationName} - {searchResults[0].arrivalStationName}
         </h1>
-        {searchResults.map((result: any) => (
-          <Card
-            onClick={() => {
-              if (!result.error) openSale(result.id);
-            }}
-            key={result.id}
-            className={`w-full max-w-[60%] ${result.error ? '' : 'cursor-pointer hover:border-[#FFFFFF30]'}`}
-          >
-            <CardContent className="flex flex-row items-center justify-between text-sm">
-              <div className={`flex flex-col gap-1 ${result.error ? 'text-[#a0988b]' : ''}`}>
-                <div className="flex flex-row items-center gap-2 font-semibold text-lg">
-                  <span>
-                    {new Date(result.departureTime)
-                      .toLocaleTimeString('fi-FI', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: 'numeric',
-                        month: 'numeric',
-                      })
-                      .split(' ')
-                      .filter((str) => str !== 'klo')
-                      .join(' ')}
-                  </span>
-                  <span>→</span>
-                  <span>
-                    {new Date(result.arrivalTime)
-                      .toLocaleTimeString('fi-FI', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: 'numeric',
-                        month: 'numeric',
-                      })
-                      .split(' ')
-                      .filter((str) => str !== 'klo')
-                      .join(' ')}
-                  </span>
-                </div>
-                <div className="flex flex-row items-center gap-2 text-sm">
-                  <div className="flex flex-row items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {formatTime(new Date(result.arrivalTime).getTime() - new Date(result.departureTime).getTime())}
-                  </div>
-                  <div className="flex flex-row items-center gap-1">
-                    <Shuffle className="w-4 h-4" />
-                    <span>{result.transfers || 'Suora'}</span>
-                  </div>
-                  {result.legs
-                    .map((leg: any) => `${leg.trainTypeName} ${leg.trainType === 'LOL' ? leg.commercialLineIdentifier : leg.trainType === 'JLA' ? leg.busLineId : leg.trainNumber}`)
-                    .join(' → ')}
-                </div>
+        <div className="flex flex-col gap-2 w-full max-w-[60%]">
+          <div className="flex flex-row gap-2">
+            <Shuffle className="h-4 w-4" />
+            <RadioGroup className="flex flex-row gap-2" value={changeCount} onValueChange={setChangeCount} defaultValue="any">
+              <div className="flex items-center space-x-1 cursor-pointer">
+                <RadioGroupItem className="cursor-pointer" value="any" id="option-any" />
+                <Label className="cursor-pointer" htmlFor="option-any">
+                  Kaikki
+                </Label>
               </div>
+              <div className="flex items-center space-x-1 cursor-pointer">
+                <RadioGroupItem className="cursor-pointer" value="direct" id="option-direct" />
+                <Label className="cursor-pointer" htmlFor="option-direct">
+                  Vain suorat
+                </Label>
+              </div>
+              <div className="flex items-center space-x-1 cursor-pointer">
+                <RadioGroupItem className="cursor-pointer" value="1" id="option-1" />
+                <Label className="cursor-pointer" htmlFor="option-1">
+                  Yksi tai vähemmän
+                </Label>
+              </div>
+              <div className="flex items-center space-x-1 cursor-pointer">
+                <RadioGroupItem className="cursor-pointer" value="2" id="option-2" />
+                <Label className="cursor-pointer" htmlFor="option-2">
+                  Kaksi tai vähemmän
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="flex flex-row gap-2">
+            <TrainFront className="h-4 w-4" />
+            <div className="flex items-center space-x-1">
+              <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
+              <Label>Pendolino</Label>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
+              <Label>InterCity</Label>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
+              <Label>Yöjuna</Label>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
+              <Label>Lähijuna</Label>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
+              <Label>Ratatyöbussi</Label>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 w-full max-w-[60%]">
+          {filteredSearchResults.length > 0 &&
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            filteredSearchResults.map((result: any) => (
+              <Card
+                onClick={() => {
+                  if (!result.error) openSale(result.id);
+                }}
+                key={result.id}
+                className={`w-full ${result.error ? '' : 'cursor-pointer hover:border-[#FFFFFF30]'}`}
+              >
+                <CardContent className="flex flex-row items-center justify-between text-sm">
+                  <div className={`flex flex-col gap-1 ${result.error ? 'text-[#a0988b]' : ''}`}>
+                    <div className="flex flex-row items-center gap-2 font-semibold text-lg">
+                      <span>
+                        {new Date(result.departureTime)
+                          .toLocaleTimeString('fi-FI', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            day: 'numeric',
+                            month: 'numeric',
+                          })
+                          .split(' ')
+                          .filter((str) => str !== 'klo')
+                          .join(' ')}
+                      </span>
+                      <span>→</span>
+                      <span>
+                        {new Date(result.arrivalTime)
+                          .toLocaleTimeString('fi-FI', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            day: 'numeric',
+                            month: 'numeric',
+                          })
+                          .split(' ')
+                          .filter((str) => str !== 'klo')
+                          .join(' ')}
+                      </span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2 text-sm">
+                      <div className="flex flex-row items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {formatTime(new Date(result.arrivalTime).getTime() - new Date(result.departureTime).getTime())}
+                      </div>
+                      <div className="flex flex-row items-center gap-1">
+                        <Shuffle className="w-4 h-4" />
+                        <span>{result.transfers || 'Suora'}</span>
+                      </div>
+                      {result.legs
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        .map((leg: any) => `${leg.trainTypeName} ${leg.trainType === 'LOL' ? leg.commercialLineIdentifier : leg.trainType === 'JLA' ? leg.busLineId : leg.trainNumber}`)
+                        .join(' → ')}
+                    </div>
+                  </div>
 
-              {result.error ? (
-                <div className="ml-auto font-semibold text-base text-[#a0988b]">{result.error === 'SOLD_OUT' ? 'Loppuunmyyty' : 'Ei saatavilla'}</div>
-              ) : (
-                <div className="ml-auto font-bold text-xl text-[#5bffa6]">{(result.totalPriceCents / 100).toFixed(2)} €</div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-        <div className="pt-2">
+                  {result.error ? (
+                    <div className="ml-auto font-semibold text-base text-[#a0988b]">{result.error === 'SOLD_OUT' ? 'Loppuunmyyty' : 'Ei saatavilla'}</div>
+                  ) : (
+                    <div className="ml-auto font-bold text-2xl text-[#5bffa6]">{(result.totalPriceCents / 100).toFixed(2)} €</div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+
+          {filteredSearchResults.length === 0 && (
+            <Alert variant="default">
+              <Info />
+              <AlertTitle>Matkoja ei löytynyt</AlertTitle>
+              <AlertDescription>
+                <p>Kokeile muuttaa rajausehtoja</p>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+        <div>
           <Button onClick={handlePreviousStep} variant="outline" className="flex-1 bg-transparent">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Takaisin
