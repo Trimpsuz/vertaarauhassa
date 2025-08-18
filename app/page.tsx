@@ -44,6 +44,7 @@ export default function HomePage() {
   const [sortedFilteredSearchResults, setSortedFilteredSearchResults] = useState<any>([]);
   const [sort, setSort] = useState('startTime');
   const [reverse, setReverse] = useState(false);
+  const [hideSoldOut, setHideSoldOut] = useState(false);
 
   const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers'];
   const sortOptionNames = new Map<string, string>([
@@ -73,12 +74,14 @@ export default function HomePage() {
 
         const matchesTransfers = changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
 
-        return matchesType && matchesTransfers;
+        const soldOut = hideSoldOut && result.error === 'SOLD_OUT';
+
+        return matchesType && matchesTransfers && !soldOut;
       });
     };
 
     setFilteredSearchResults(filterSearchResults);
-  }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, changeCount]);
+  }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, changeCount, hideSoldOut]);
 
   useEffect(() => {
     const sorted = [...filteredSearchResults].sort((a, b) => {
@@ -532,10 +535,13 @@ export default function HomePage() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-
             <Button variant={reverse ? 'default' : 'outline'} size="icon" onClick={() => setReverse((prev) => !prev)}>
               <ArrowUpDown className="h-4 w-4" />
             </Button>
+            <div className="flex items-center space-x-1">
+              <Switch className="cursor-pointer" checked={hideSoldOut} onCheckedChange={setHideSoldOut} />
+              <Label>Piilota loppuunmyydyt</Label>
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full max-w-[60%]">
