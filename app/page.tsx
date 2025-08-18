@@ -7,7 +7,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Check, ChevronsUpDown, MapPin, Navigation, Calendar, ArrowLeft, Users, Minus, Plus, Info, Shuffle, TrainFront, Car, Clock } from 'lucide-react';
+import { Check, ChevronsUpDown, MapPin, Navigation, Calendar, ArrowLeft, Users, Minus, Plus, Info, Shuffle, TrainFront, Car, Clock, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { cn, formatTime } from '@/lib/utils';
 import { stationMap } from '@/lib/constants';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { createSale, searchJourney } from '@/lib/api';
 import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -39,10 +40,21 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<any>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [filteredSearchResults, setFilteredSearchResults] = useState<any>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [sortedFilteredSearchResults, setSortedFilteredSearchResults] = useState<any>([]);
+  const [sort, setSort] = useState('startTime');
+  const [reverse, setReverse] = useState(false);
+
+  const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers'];
+  const sortOptionNames = new Map<string, string>([
+    ['startTime', 'Lähtöaika'],
+    ['endTime', 'Saapumisaika'],
+    ['duration', 'Kesto'],
+    ['price', 'Hinta'],
+    ['transfers', 'Vaihtojen määrä'],
+  ]);
 
   useEffect(() => {
-    console.log(changeCount);
-
     const filterSearchResults = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return searchResults.filter((result: any) => {
@@ -67,6 +79,27 @@ export default function HomePage() {
 
     setFilteredSearchResults(filterSearchResults);
   }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, changeCount]);
+
+  useEffect(() => {
+    const sorted = [...filteredSearchResults].sort((a, b) => {
+      if (sort === 'startTime') {
+        return reverse ? new Date(b.departureTime).getTime() - new Date(a.departureTime).getTime() : new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
+      } else if (sort === 'endTime') {
+        return reverse ? new Date(b.arrivalTime).getTime() - new Date(a.arrivalTime).getTime() : new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime();
+      } else if (sort === 'duration') {
+        return reverse
+          ? new Date(b.arrivalTime).getTime() - new Date(b.departureTime).getTime() - (new Date(a.arrivalTime).getTime() - new Date(a.departureTime).getTime())
+          : new Date(a.arrivalTime).getTime() - new Date(a.departureTime).getTime() - (new Date(b.arrivalTime).getTime() - new Date(b.departureTime).getTime());
+      } else if (sort === 'price') {
+        return reverse ? b.totalPriceCents - a.totalPriceCents : a.totalPriceCents - b.totalPriceCents;
+      } else if (sort === 'transfers') {
+        return reverse ? b.transfers - a.transfers : a.transfers - b.transfers;
+      }
+      return 0;
+    });
+
+    setSortedFilteredSearchResults(sorted);
+  }, [filteredSearchResults, sort, reverse]);
 
   const createdSales = new Map<string, string>();
 
@@ -483,11 +516,32 @@ export default function HomePage() {
               <Label>Ratatyöbussi</Label>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  Lajittele: {sortOptionNames.get(sort)}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {sortOptions.map((option) => (
+                  <DropdownMenuItem key={option} onClick={() => setSort(option)} className={`cursor-pointer ${sort === option ? 'bg-muted' : ''}`}>
+                    {sortOptionNames.get(option)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant={reverse ? 'default' : 'outline'} size="icon" onClick={() => setReverse((prev) => !prev)}>
+              <ArrowUpDown className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <div className="flex flex-col gap-2 w-full max-w-[60%]">
-          {filteredSearchResults.length > 0 &&
+          {sortedFilteredSearchResults.length > 0 &&
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            filteredSearchResults.map((result: any) => (
+            sortedFilteredSearchResults.map((result: any) => (
               <Card
                 onClick={() => {
                   if (!result.error) openSale(result.id);
@@ -549,7 +603,7 @@ export default function HomePage() {
               </Card>
             ))}
 
-          {filteredSearchResults.length === 0 && (
+          {sortedFilteredSearchResults.length === 0 && (
             <Alert variant="default">
               <Info />
               <AlertTitle>Matkoja ei löytynyt</AlertTitle>
