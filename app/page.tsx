@@ -16,6 +16,11 @@ import { Switch } from '@/components/ui/switch';
 import { createSale, searchJourney } from '@/lib/api';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import SpaceLimited from '@/components/ui/icons/SpaceLimited';
+import SpaceModerate from '@/components/ui/icons/SpaceModerate';
+import SpacePlenty from '@/components/ui/icons/SpacePlenty';
+import { Tooltip } from '@radix-ui/react-tooltip';
+import { TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -46,13 +51,14 @@ export default function HomePage() {
   const [reverse, setReverse] = useState(false);
   const [hideSoldOut, setHideSoldOut] = useState(false);
 
-  const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers'];
+  const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers', 'fill'];
   const sortOptionNames = new Map<string, string>([
     ['startTime', 'Lähtöaika'],
     ['endTime', 'Saapumisaika'],
     ['duration', 'Kesto'],
     ['price', 'Hinta'],
     ['transfers', 'Vaihtojen määrä'],
+    ['fill', 'Täyttöaste'],
   ]);
 
   useEffect(() => {
@@ -97,6 +103,8 @@ export default function HomePage() {
         return reverse ? b.totalPriceCents - a.totalPriceCents : a.totalPriceCents - b.totalPriceCents;
       } else if (sort === 'transfers') {
         return reverse ? b.transfers - a.transfers : a.transfers - b.transfers;
+      } else if (sort === 'fill') {
+        return reverse ? b.highestLegTrainFill - a.highestLegTrainFill : a.highestLegTrainFill - b.highestLegTrainFill;
       }
       return 0;
     });
@@ -600,11 +608,29 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {result.error ? (
-                    <div className="ml-auto font-semibold text-base text-[#a0988b]">{result.error === 'SOLD_OUT' ? 'Loppuunmyyty' : 'Ei saatavilla'}</div>
-                  ) : (
-                    <div className="ml-auto font-bold text-2xl text-[#5bffa6]">{(result.totalPriceCents / 100).toFixed(2)} €</div>
-                  )}
+                  <div className="ml-auto flex flex-row gap-4 items-center">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {result.highestLegTrainFill &&
+                          (result.highestLegTrainFill > 75 ? (
+                            <SpaceLimited className="w-6 h-6" />
+                          ) : result.highestLegTrainFill > 45 ? (
+                            <SpaceModerate className="w-6 h-6" />
+                          ) : (
+                            <SpacePlenty className="w-6 h-6" />
+                          ))}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{result.highestLegTrainFill}%</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {result.error ? (
+                      <div className="font-semibold text-base text-[#a0988b]">{result.error === 'SOLD_OUT' ? 'Loppuunmyyty' : 'Ei saatavilla'}</div>
+                    ) : (
+                      <div className="font-bold text-2xl text-[#5bffa6]">{(result.totalPriceCents / 100).toFixed(2)} €</div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}

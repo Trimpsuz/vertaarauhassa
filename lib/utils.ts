@@ -30,6 +30,7 @@ export function parse(data: any) {
       departureStationName: stationMap.get(item.departureStation),
       arrivalStationName: stationMap.get(item.arrivalStation),
       error: item.error,
+      highestLegTrainFill: item.highestLegTrainFill,
     });
   }
 
