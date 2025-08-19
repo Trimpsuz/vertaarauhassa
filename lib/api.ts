@@ -1,5 +1,6 @@
 import { getDatesInRange, parse } from './utils';
 import axios from 'axios';
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 export const searchJourney = async (
@@ -54,7 +55,20 @@ export const searchJourney = async (
   );
 
   const responses = await Promise.all(requests);
-  const results = responses.flatMap((res) => parse(res.data));
+
+  const errors: string[] = [];
+
+  const results = responses.flatMap((res) => {
+    if (res.data.errors) {
+      errors.push(res.data.errors[0].message);
+      return [];
+    }
+    return parse(res.data);
+  });
+
+  errors.forEach((error) => {
+    toast.error(error);
+  });
 
   return results;
 };
