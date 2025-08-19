@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { getBaseURL } from '@/lib/deployment';
 
 const sourceSans = Source_Sans_3({
   subsets: ['latin'],
@@ -12,6 +13,15 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   title: 'VertaaRauhassa',
   description: 'Vertaa VR matkojen hintoja',
+  alternates: {
+    canonical: getBaseURL(),
+  },
+  openGraph: {
+    title: 'VertaaRauhassa',
+    description: 'Vertaa VR matkojen hintoja',
+    url: getBaseURL(),
+    siteName: 'VertaaRauhassa',
+  },
 };
 
 export default function RootLayout({
