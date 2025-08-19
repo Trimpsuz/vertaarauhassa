@@ -47,6 +47,7 @@ export default function HomePage() {
   const [allowBus, setAllowBus] = useState(true);
   const [allowNight, setAllowNight] = useState(true);
   const [allowCommuter, setAllowCommuter] = useState(true);
+  const [allowRailCar, setAllowRailCar] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,13 +77,16 @@ export default function HomePage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isInterCity = result.legs.some((leg: any) => leg.trainType === 'IC');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isBus = result.legs.some((leg: any) => leg.trainType === 'JLA');
+        const isBus = result.legs.some((leg: any) => leg.trainType === 'JLA' || leg.trainType === 'BLV');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isNight = result.legs.some((leg: any) => leg.trainType === 'PYO');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const isCommuter = result.legs.some((leg: any) => leg.trainType === 'LOL');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isRailCar = result.legs.some((leg: any) => leg.trainType === 'HDM');
 
-        const matchesType = (!isPendolino || allowPendolino) && (!isInterCity || allowInterCity) && (!isBus || allowBus) && (!isNight || allowNight) && (!isCommuter || allowCommuter);
+        const matchesType =
+          (!isPendolino || allowPendolino) && (!isInterCity || allowInterCity) && (!isBus || allowBus) && (!isNight || allowNight) && (!isCommuter || allowCommuter) && (!isRailCar || allowRailCar);
 
         const matchesTransfers = changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
 
@@ -93,7 +97,7 @@ export default function HomePage() {
     };
 
     setFilteredSearchResults(filterSearchResults);
-  }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, changeCount, hideSoldOut]);
+  }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, allowRailCar, changeCount, hideSoldOut]);
 
   useEffect(() => {
     const sorted = [...filteredSearchResults].sort((a, b) => {
@@ -532,6 +536,10 @@ export default function HomePage() {
             <div className="flex items-center space-x-1">
               <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
               <Label>Ratatyöbussi</Label>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} />
+              <Label>Kiskobussi</Label>
             </div>
           </div>
           <div className="flex items-center gap-2">
