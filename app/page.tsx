@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { createSale, searchJourney } from '@/lib/api';
 import { stationMap } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Info, MapPin, Minus, Navigation, Plus, Shuffle, TrainFront, Users } from 'lucide-react';
+import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, Shuffle, TrainFront, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -49,6 +49,7 @@ export default function HomePage() {
   const [sort, setSort] = useState('startTime');
   const [reverse, setReverse] = useState(false);
   const [hideSoldOut, setHideSoldOut] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers', 'fill'];
   const sortOptionNames = new Map<string, string>([
@@ -157,6 +158,7 @@ export default function HomePage() {
     } else if (currentStep === 2 && startDate && endDate) {
       setCurrentStep(3);
     } else if (currentStep === 3 && 19 > adults + children + seniors + students + conscripts && adults + children + seniors + students + conscripts > 0) {
+      setLoading(true);
       const results = await searchJourney(origin, destination, startDate, endDate, adults, children, seniors, students, conscripts);
       if (results.length === 0) {
         toast.error('Matkoja ei löytynyt', {
@@ -166,6 +168,7 @@ export default function HomePage() {
       }
       setSearchResults(results);
       setCurrentStep(4);
+      setLoading(false);
     }
   };
 
@@ -284,7 +287,7 @@ export default function HomePage() {
                   </Popover>
                 </div>
 
-                <Button onClick={handleNextStep} disabled={!isStep1Valid} className="w-full py-2" size="lg">
+                <Button onClick={handleNextStep} disabled={!isStep1Valid} className="w-full py-2 sm:py-0" size="lg">
                   Seuraava: Valitse hakuväli
                 </Button>
               </>
@@ -371,11 +374,11 @@ export default function HomePage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button onClick={handlePreviousStep} variant="outline" className="flex-1 bg-transparent">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
+                  <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
+                    <ArrowLeft className="h-4 w-4" />
                     Takaisin
                   </Button>
-                  <Button onClick={handleNextStep} disabled={!isStep2Valid} className="flex-1 py-2" size="lg">
+                  <Button onClick={handleNextStep} disabled={!isStep2Valid} size="lg" className="flex-1 py-2 sm:py-0">
                     Seuraava: Matkustajien määrä
                   </Button>
                 </div>
@@ -503,11 +506,12 @@ export default function HomePage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button onClick={handlePreviousStep} variant="outline" className="flex-1 bg-transparent">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
+                  <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
+                    <ArrowLeft className="h-4 w-4" />
                     Takaisin
                   </Button>
-                  <Button onClick={handleNextStep} disabled={!isStep3Valid} className="flex-1 py-2" size="lg">
+                  <Button onClick={handleNextStep} disabled={!isStep3Valid || loading} size="lg" className="flex-1 py-2 sm:py-0">
+                    {loading && <Loader2Icon className="animate-spin" />}
                     Hae
                   </Button>
                 </div>

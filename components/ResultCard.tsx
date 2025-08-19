@@ -15,9 +15,9 @@ const ResultCardComponent = ({ result, openSale }: { result: any; openSale: (id:
       onClick={() => {
         if (!result.error) openSale(result.id);
       }}
-      className={`w-full ${result.error ? '' : 'cursor-pointer hover:border-[#FFFFFF30]'}`}
+      className={`py-4 sm:py-6 w-full ${result.error ? '' : 'cursor-pointer hover:border-[#FFFFFF30]'}`}
     >
-      <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+      <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-sm">
         <div className={`flex flex-col gap-1 ${result.error ? 'text-[#a0988b]' : ''}`}>
           <div className="flex flex-row items-center gap-2 font-semibold text-base sm:text-lg">
             <span>
