@@ -305,7 +305,17 @@ export default function HomePage() {
                     <Calendar className="h-4 w-4" />
                     Mistä
                   </Label>
-                  <Input id="travel-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} min={today} className="w-full" />
+                  <Input
+                    id="travel-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      if (!endDate || new Date(e.target.value) > new Date(endDate)) setEndDate(e.target.value);
+                    }}
+                    min={today}
+                    className="w-full"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -313,7 +323,47 @@ export default function HomePage() {
                     <Calendar className="h-4 w-4" />
                     Mihin
                   </Label>
-                  <Input id="travel-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={today} className="w-full" />
+                  <Input
+                    id="travel-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      console.log(e.target.value);
+                    }}
+                    min={today}
+                    className="w-full"
+                  />
+
+                  <div className="flex flex-row gap-1">
+                    <Button
+                      variant="outline"
+                      disabled={!endDate}
+                      onClick={() => {
+                        setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 1)).toISOString().split('T')[0]);
+                      }}
+                    >
+                      +1 pv
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={!endDate}
+                      onClick={() => {
+                        setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 7)).toISOString().split('T')[0]);
+                      }}
+                    >
+                      +1 vk
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={!endDate}
+                      onClick={() => {
+                        setEndDate(new Date(new Date(endDate).setMonth(new Date(endDate).getMonth() + 1)).toISOString().split('T')[0]);
+                      }}
+                    >
+                      +1 kk
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2">
