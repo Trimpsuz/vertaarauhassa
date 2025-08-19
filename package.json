@@ -1,6 +1,6 @@
 {
   "name": "vertaarauhassa",
-  "version": "0.1.0",
+  "version": "2025.0819",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

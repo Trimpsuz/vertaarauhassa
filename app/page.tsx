@@ -209,7 +209,7 @@ export default function HomePage() {
     return (
       <>
         <FloatingControls />
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 gap-12 flex-col">
           <Card className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
             <CardHeader className="text-center">
               <CardTitle className={`text-xl sm:text-2xl font-bold ${poppins.className}`}>VertaaRauhassa</CardTitle>
@@ -540,6 +540,27 @@ export default function HomePage() {
               )}
             </CardContent>
           </Card>
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
+            <p className="text-md text-muted-foreground">
+              Tämä on{' '}
+              <a className="underline cursor-pointer" href="https://github.com/Trimpsuz/vertaarauhassa">
+                avoimen lähdekoodin
+              </a>{' '}
+              projekti
+            </p>
+
+            <div>
+              <p className="text-sm text-muted-foreground">VertaaRauhassa {process.env.NEXT_PUBLIC_APP_VERSION}</p>
+              <p className="text-sm text-muted-foreground">
+                Emme ole <span className="italic">VR-Yhtymä Oyj:n</span>, sen tytäryhtiöiden tai sen yhteistyökumppanien kanssa sidoksissa tai millään tavalla virallisesti yhteydessä niihin.
+                Virallinen verkkosivusto on osoitteessa{' '}
+                <a className="underline cursor-pointer" href="https://www.vr.fi/">
+                  www.vr.fi
+                </a>
+                .
+              </p>
+            </div>
+          </div>
         </div>
       </>
     );
