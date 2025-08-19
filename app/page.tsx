@@ -545,9 +545,11 @@ export default function HomePage() {
                 { value: '1', label: 'Yksi tai vähemmän' },
                 { value: '2', label: 'Kaksi tai vähemmän' },
               ].map((opt) => (
-                <div key={opt.value} className="flex items-center space-x-1 cursor-pointer">
-                  <RadioGroupItem value={opt.value} id={`option-${opt.value}`} />
-                  <Label htmlFor={`option-${opt.value}`}>{opt.label}</Label>
+                <div key={opt.value} className="flex items-center space-x-1">
+                  <RadioGroupItem className="cursor-pointer" value={opt.value} id={`option-${opt.value}`} />
+                  <Label className="cursor-pointer" htmlFor={`option-${opt.value}`}>
+                    {opt.label}
+                  </Label>
                 </div>
               ))}
             </RadioGroup>
@@ -555,27 +557,27 @@ export default function HomePage() {
 
           <div className="flex flex-wrap gap-2">
             <div className="flex items-center space-x-1">
-              <Switch checked={allowPendolino} onCheckedChange={setAllowPendolino} />
+              <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
               <Label>Pendolino</Label>
             </div>
             <div className="flex items-center space-x-1">
-              <Switch checked={allowInterCity} onCheckedChange={setAllowInterCity} />
+              <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
               <Label>InterCity</Label>
             </div>
             <div className="flex items-center space-x-1">
-              <Switch checked={allowNight} onCheckedChange={setAllowNight} />
+              <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
               <Label>Yöjuna</Label>
             </div>
             <div className="flex items-center space-x-1">
-              <Switch checked={allowCommuter} onCheckedChange={setAllowCommuter} />
+              <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
               <Label>Lähijuna</Label>
             </div>
             <div className="flex items-center space-x-1">
-              <Switch checked={allowBus} onCheckedChange={setAllowBus} />
+              <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
               <Label>Ratatyöbussi</Label>
             </div>
             <div className="flex items-center space-x-1">
-              <Switch checked={allowRailCar} onCheckedChange={setAllowRailCar} />
+              <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} />
               <Label>Kiskobussi</Label>
             </div>
           </div>
@@ -603,7 +605,7 @@ export default function HomePage() {
               </Button>
             </div>
             <div className="flex items-center space-x-1">
-              <Switch checked={hideSoldOut} onCheckedChange={setHideSoldOut} />
+              <Switch className="cursor-pointer" checked={hideSoldOut} onCheckedChange={setHideSoldOut} />
               <Label>Piilota loppuunmyydyt</Label>
             </div>
           </div>
