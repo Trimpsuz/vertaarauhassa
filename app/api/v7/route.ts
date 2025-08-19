@@ -6,9 +6,12 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const response = (await axios.post('https://www.vr.fi/api/v7', await request.json())).data;
-
     return NextResponse.json(response);
-  } catch (error) {
-    return NextResponse.json(error.response.data, { status: error.response.status });
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response) {
+      return NextResponse.json(error.response.data, { status: error.response.status });
+    } else {
+      return NextResponse.json({ message: 'Unknown error occurred' }, { status: 500 });
+    }
   }
 }
