@@ -1,27 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import ResultCard from '@/components/ResultCard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Check, ChevronsUpDown, MapPin, Navigation, Calendar, ArrowLeft, Users, Minus, Plus, Info, Shuffle, TrainFront, Clock, ChevronDown, ArrowUpDown } from 'lucide-react';
-import { cn, formatTime } from '@/lib/utils';
-import { stationMap } from '@/lib/constants';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { createSale, searchJourney } from '@/lib/api';
-import { toast } from 'sonner';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import SpaceLimited from '@/components/ui/icons/SpaceLimited';
-import SpaceModerate from '@/components/ui/icons/SpaceModerate';
-import SpacePlenty from '@/components/ui/icons/SpacePlenty';
-import { Tooltip } from '@radix-ui/react-tooltip';
-import { TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { stationMap } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Info, MapPin, Minus, Navigation, Plus, Shuffle, TrainFront, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -50,10 +46,6 @@ export default function HomePage() {
   const [allowRailCar, setAllowRailCar] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [filteredSearchResults, setFilteredSearchResults] = useState<any>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [sortedFilteredSearchResults, setSortedFilteredSearchResults] = useState<any>([]);
   const [sort, setSort] = useState('startTime');
   const [reverse, setReverse] = useState(false);
   const [hideSoldOut, setHideSoldOut] = useState(false);
@@ -68,58 +60,59 @@ export default function HomePage() {
     ['fill', 'Täyttöaste'],
   ]);
 
-  useEffect(() => {
-    const filterSearchResults = () => {
+  const filteredSearchResults = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return searchResults.filter((result: any) => {
+      const legs = result.legs ?? [];
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return searchResults.filter((result: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isPendolino = result.legs.some((leg: any) => leg.trainType === 'S');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isInterCity = result.legs.some((leg: any) => leg.trainType === 'IC');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isBus = result.legs.some((leg: any) => leg.trainType === 'JLA' || leg.trainType === 'BLV');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isNight = result.legs.some((leg: any) => leg.trainType === 'PYO');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isCommuter = result.legs.some((leg: any) => leg.trainType === 'LOL');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const isRailCar = result.legs.some((leg: any) => leg.trainType === 'HDM');
+      const isPendolino = legs.some((leg: any) => leg.trainType === 'S');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isInterCity = legs.some((leg: any) => leg.trainType === 'IC');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isBus = legs.some((leg: any) => ['JLA', 'BLV'].includes(leg.trainType));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isNight = legs.some((leg: any) => leg.trainType === 'PYO');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isCommuter = legs.some((leg: any) => leg.trainType === 'LOL');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isRailCar = legs.some((leg: any) => leg.trainType === 'HDM');
 
-        const matchesType =
-          (!isPendolino || allowPendolino) && (!isInterCity || allowInterCity) && (!isBus || allowBus) && (!isNight || allowNight) && (!isCommuter || allowCommuter) && (!isRailCar || allowRailCar);
+      const matchesType =
+        (!isPendolino || allowPendolino) && (!isInterCity || allowInterCity) && (!isBus || allowBus) && (!isNight || allowNight) && (!isCommuter || allowCommuter) && (!isRailCar || allowRailCar);
 
-        const matchesTransfers = changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
+      const matchesTransfers = changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
 
-        const soldOut = hideSoldOut && result.error === 'SOLD_OUT';
+      const soldOut = hideSoldOut && result.error === 'SOLD_OUT';
 
-        return matchesType && matchesTransfers && !soldOut;
-      });
-    };
-
-    setFilteredSearchResults(filterSearchResults);
+      return matchesType && matchesTransfers && !soldOut;
+    });
   }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, allowRailCar, changeCount, hideSoldOut]);
 
-  useEffect(() => {
-    const sorted = [...filteredSearchResults].sort((a, b) => {
+  const sortedFilteredSearchResults = useMemo(() => {
+    return [...filteredSearchResults].sort((a, b) => {
       if (sort === 'startTime') {
         return reverse ? new Date(b.departureTime).getTime() - new Date(a.departureTime).getTime() : new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
-      } else if (sort === 'endTime') {
+      }
+      if (sort === 'endTime') {
         return reverse ? new Date(b.arrivalTime).getTime() - new Date(a.arrivalTime).getTime() : new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime();
-      } else if (sort === 'duration') {
-        return reverse
-          ? new Date(b.arrivalTime).getTime() - new Date(b.departureTime).getTime() - (new Date(a.arrivalTime).getTime() - new Date(a.departureTime).getTime())
-          : new Date(a.arrivalTime).getTime() - new Date(a.departureTime).getTime() - (new Date(b.arrivalTime).getTime() - new Date(b.departureTime).getTime());
-      } else if (sort === 'price') {
+      }
+      if (sort === 'duration') {
+        const durA = new Date(a.arrivalTime).getTime() - new Date(a.departureTime).getTime();
+        const durB = new Date(b.arrivalTime).getTime() - new Date(b.departureTime).getTime();
+        return reverse ? durB - durA : durA - durB;
+      }
+      if (sort === 'price') {
         return reverse ? b.totalPriceCents - a.totalPriceCents : a.totalPriceCents - b.totalPriceCents;
-      } else if (sort === 'transfers') {
+      }
+      if (sort === 'transfers') {
         return reverse ? b.transfers - a.transfers : a.transfers - b.transfers;
-      } else if (sort === 'fill') {
+      }
+      if (sort === 'fill') {
         return reverse ? b.highestLegTrainFill - a.highestLegTrainFill : a.highestLegTrainFill - b.highestLegTrainFill;
       }
       return 0;
     });
-
-    setSortedFilteredSearchResults(sorted);
   }, [filteredSearchResults, sort, reverse]);
 
   const createdSales = new Map<string, string>();
@@ -182,7 +175,6 @@ export default function HomePage() {
     }
     if (currentStep === 4) {
       setSearchResults([]);
-      setFilteredSearchResults([]);
       createdSales.clear();
     }
   };
@@ -617,95 +609,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
+        <div className="flex flex-col gap-2 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
           {sortedFilteredSearchResults.length > 0 ? (
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            sortedFilteredSearchResults.map((result: any) => (
-              <Card
-                key={result.id}
-                onClick={() => {
-                  if (!result.error) openSale(result.id);
-                }}
-                className={`w-full ${result.error ? '' : 'cursor-pointer hover:border-[#FFFFFF30]'}`}
-              >
-                <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
-                  <div className={`flex flex-col gap-1 ${result.error ? 'text-[#a0988b]' : ''}`}>
-                    <div className="flex flex-row items-center gap-2 font-semibold text-base sm:text-lg">
-                      <span>
-                        {new Date(result.departureTime)
-                          .toLocaleTimeString('fi-FI', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            day: 'numeric',
-                            month: 'numeric',
-                          })
-                          .split(' ')
-                          .filter((str) => str !== 'klo')
-                          .join(' ')}
-                      </span>
-                      <span>→</span>
-                      <span>
-                        {new Date(result.arrivalTime)
-                          .toLocaleTimeString('fi-FI', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            day: 'numeric',
-                            month: 'numeric',
-                          })
-                          .split(' ')
-                          .filter((str) => str !== 'klo')
-                          .join(' ')}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-start sm:items-center gap-2 text-sm flex-col sm:flex-row">
-                      <div className="flex flex-row gap-2">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {formatTime(new Date(result.arrivalTime).getTime() - new Date(result.departureTime).getTime())}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Shuffle className="w-4 h-4" />
-                          <span>{result.transfers || 'Suora'}</span>
-                        </div>
-                      </div>
-
-                      <span>
-                        {result.legs
-                          .map(
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            (leg: any) => `${leg.trainTypeName} ${leg.trainType === 'LOL' ? leg.commercialLineIdentifier : leg.trainType === 'JLA' ? leg.busLineId : leg.trainNumber}`
-                          )
-                          .join(' → ')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="ml-auto flex flex-row gap-4 items-center">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {result.highestLegTrainFill &&
-                          (result.highestLegTrainFill > 75 ? (
-                            <SpaceLimited className="w-6 h-6" />
-                          ) : result.highestLegTrainFill > 45 ? (
-                            <SpaceModerate className="w-6 h-6" />
-                          ) : (
-                            <SpacePlenty className="w-6 h-6" />
-                          ))}
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{result.highestLegTrainFill}%</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {result.error ? (
-                      <div className="font-semibold text-base text-[#a0988b]">{result.error === 'SOLD_OUT' ? 'Loppuunmyyty' : 'Ei saatavilla'}</div>
-                    ) : (
-                      <div className="font-bold text-lg sm:text-2xl text-[#5bffa6]">{(result.totalPriceCents / 100).toFixed(2)} €</div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+            sortedFilteredSearchResults.map((result: any) => <ResultCard key={result.id} result={result} openSale={openSale} />)
           ) : (
             <Alert variant="default">
               <Info />
