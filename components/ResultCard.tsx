@@ -9,13 +9,26 @@ import { Card, CardContent } from './ui/card';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ResultCardComponent = ({ result, openSale }: { result: any; openSale: (id: string) => void }) => {
+  const handleActivate = () => {
+    if (!result.error) openSale(result.id);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleActivate();
+    }
+  };
+
   return (
     <Card
       key={result.id}
-      onClick={() => {
-        if (!result.error) openSale(result.id);
-      }}
-      className={`py-4 sm:py-6 w-full ${result.error ? '' : 'cursor-pointer hover:border-[#FFFFFF30]'}`}
+      onClick={handleActivate}
+      onKeyDown={handleKeyDown}
+      role={!result.error ? 'button' : undefined}
+      tabIndex={!result.error ? 0 : -1}
+      aria-disabled={!!result.error}
+      className={`py-4 sm:py-6 w-full ${result.error ? '' : 'cursor-pointer hover:border-[#FFFFFF30] focus:outline-none focus:ring-2 focus:ring-[#5bffa6]'}`}
     >
       <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-sm">
         <div className={`flex flex-col gap-1 ${result.error ? 'text-[#a0988b]' : ''}`}>
@@ -68,14 +81,17 @@ const ResultCardComponent = ({ result, openSale }: { result: any; openSale: (id:
         <div className="ml-auto flex flex-row gap-4 items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              {result.highestLegTrainFill &&
-                (result.highestLegTrainFill > 75 ? (
-                  <SpaceLimited className="w-6 h-6" />
-                ) : result.highestLegTrainFill > 45 ? (
-                  <SpaceModerate className="w-6 h-6" />
-                ) : (
-                  <SpacePlenty className="w-6 h-6" />
-                ))}
+              {result.highestLegTrainFill && (
+                <div tabIndex={0} role="button" aria-label={`${result.highestLegTrainFill}% täynnä`} className="focus:outline-none focus:ring-2 focus:ring-[#5bffa6] rounded-md">
+                  {result.highestLegTrainFill > 75 ? (
+                    <SpaceLimited className="w-6 h-6" />
+                  ) : result.highestLegTrainFill > 45 ? (
+                    <SpaceModerate className="w-6 h-6" />
+                  ) : (
+                    <SpacePlenty className="w-6 h-6" />
+                  )}
+                </div>
+              )}
             </TooltipTrigger>
             <TooltipContent>
               <p>{result.highestLegTrainFill}%</p>

@@ -225,13 +225,13 @@ export default function HomePage() {
               {currentStep === 1 && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
+                    <label className="text-sm font-medium flex items-center gap-2" id="origin-label">
                       <MapPin className="h-4 w-4" />
                       Mistä
                     </label>
                     <Popover open={originOpen} onOpenChange={setOriginOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-expanded={originOpen} className="w-full justify-between bg-transparent">
+                        <Button variant="outline" role="combobox" aria-labelledby="origin-label" aria-expanded={originOpen} className="w-full justify-between bg-transparent">
                           {origin ? stationMap.get(origin) : 'Valitse lähtöasema...'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -258,13 +258,13 @@ export default function HomePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
+                    <label className="text-sm font-medium flex items-center gap-2" id="destination-label">
                       <Navigation className="h-4 w-4" />
                       Minne
                     </label>
                     <Popover open={destinationOpen} onOpenChange={setDestinationOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-expanded={destinationOpen} className="w-full justify-between bg-transparent">
+                        <Button variant="outline" role="combobox" aria-labelledby="destination-label" aria-expanded={destinationOpen} className="w-full justify-between bg-transparent">
                           {destination ? stationMap.get(destination) : 'Valitse kohdeasema...'}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -299,12 +299,12 @@ export default function HomePage() {
               {currentStep === 2 && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="travel-date" className="text-sm font-medium flex items-center gap-2">
+                    <Label htmlFor="travel-start-date" className="text-sm font-medium flex items-center gap-2" id="start-date-label">
                       <Calendar className="h-4 w-4" />
                       Mistä
                     </Label>
                     <Input
-                      id="travel-date"
+                      id="travel-start-date"
                       type="date"
                       value={startDate}
                       onChange={(e) => {
@@ -313,16 +313,17 @@ export default function HomePage() {
                       }}
                       min={today}
                       className="w-full"
+                      aria-labelledby="start-date-label"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="travel-date" className="text-sm font-medium flex items-center gap-2">
+                    <Label htmlFor="travel-end-date" className="text-sm font-medium flex items-center gap-2" id="end-date-label">
                       <Calendar className="h-4 w-4" />
                       Mihin
                     </Label>
                     <Input
-                      id="travel-date"
+                      id="travel-end-date"
                       type="date"
                       value={endDate}
                       onChange={(e) => {
@@ -331,6 +332,7 @@ export default function HomePage() {
                       }}
                       min={today}
                       className="w-full"
+                      aria-labelledby="end-date-label"
                     />
 
                     <div className="flex flex-row gap-1">
@@ -401,11 +403,18 @@ export default function HomePage() {
                         <div className="font-medium text-sm">Aikuiset</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('adults')} disabled={adults <= 0} className="h-8 w-8 p-0">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('adults')} disabled={adults <= 0} className="h-8 w-8 p-0" aria-label="Aikuiset −">
                           <Minus className="h-4 w-4" />
                         </Button>
                         <span className="w-8 text-center font-medium">{adults}</span>
-                        <Button variant="outline" size="sm" onClick={() => incrementPassenger('adults')} disabled={adults >= 18 - (children + seniors + students + conscripts)} className="h-8 w-8 p-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => incrementPassenger('adults')}
+                          disabled={adults >= 18 - (children + seniors + students + conscripts)}
+                          className="h-8 w-8 p-0"
+                          aria-label="Aikuiset +"
+                        >
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
@@ -416,7 +425,7 @@ export default function HomePage() {
                         <div className="font-medium text-sm">Lapset</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('children')} disabled={children <= 0} className="h-8 w-8 p-0">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('children')} disabled={children <= 0} className="h-8 w-8 p-0" aria-label="Lapset −">
                           <Minus className="h-4 w-4" />
                         </Button>
                         <span className="w-8 text-center font-medium">{children}</span>
@@ -426,6 +435,7 @@ export default function HomePage() {
                           onClick={() => incrementPassenger('children')}
                           disabled={children >= 18 - (adults + seniors + students + conscripts)}
                           className="h-8 w-8 p-0"
+                          aria-label="Lapset +"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -437,7 +447,7 @@ export default function HomePage() {
                         <div className="font-medium text-sm">Eläkeläiset</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('seniors')} disabled={seniors <= 0} className="h-8 w-8 p-0">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('seniors')} disabled={seniors <= 0} className="h-8 w-8 p-0" aria-label="Eläkeläiset −">
                           <Minus className="h-4 w-4" />
                         </Button>
                         <span className="w-8 text-center font-medium">{seniors}</span>
@@ -447,6 +457,7 @@ export default function HomePage() {
                           onClick={() => incrementPassenger('seniors')}
                           disabled={seniors >= 18 - (children + adults + students + conscripts)}
                           className="h-8 w-8 p-0"
+                          aria-label="Eläkeläiset +"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -458,7 +469,7 @@ export default function HomePage() {
                         <div className="font-medium text-sm">Opiskelijat</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('students')} disabled={students <= 0} className="h-8 w-8 p-0">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('students')} disabled={students <= 0} className="h-8 w-8 p-0" aria-label="Opiskelijat −">
                           <Minus className="h-4 w-4" />
                         </Button>
                         <span className="w-8 text-center font-medium">{students}</span>
@@ -468,6 +479,7 @@ export default function HomePage() {
                           onClick={() => incrementPassenger('students')}
                           disabled={students >= 18 - (children + seniors + adults + conscripts)}
                           className="h-8 w-8 p-0"
+                          aria-label="Opiskelijat +"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -479,7 +491,7 @@ export default function HomePage() {
                         <div className="font-medium text-sm">Asevelvolliset</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('conscripts')} disabled={conscripts <= 0} className="h-8 w-8 p-0">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('conscripts')} disabled={conscripts <= 0} className="h-8 w-8 p-0" aria-label="Asevelvolliset −">
                           <Minus className="h-4 w-4" />
                         </Button>
                         <span className="w-8 text-center font-medium">{conscripts}</span>
@@ -489,6 +501,7 @@ export default function HomePage() {
                           onClick={() => incrementPassenger('conscripts')}
                           disabled={conscripts >= 18 - (children + seniors + students + adults)}
                           className="h-8 w-8 p-0"
+                          aria-label="Asevelvolliset +"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -577,9 +590,11 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <div className="flex items-center gap-1">
                 <Shuffle className="h-4 w-4" />
-                <span className="font-medium">Vaihdot</span>
+                <span className="font-medium" id="transfers-label">
+                  Vaihdot
+                </span>
               </div>
-              <RadioGroup className="flex flex-wrap sm:flex-nowrap gap-2" value={changeCount} onValueChange={setChangeCount} defaultValue="any">
+              <RadioGroup className="flex flex-wrap sm:flex-nowrap gap-2" value={changeCount} onValueChange={setChangeCount} defaultValue="any" aria-labelledby="transfers-label">
                 {[
                   { value: 'any', label: 'Kaikki' },
                   { value: 'direct', label: 'Vain suorat' },
@@ -599,32 +614,34 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <div className="flex items-center gap-1">
                 <TrainFront className="h-4 w-4" />
-                <span className="font-medium">Junatyypit</span>
+                <span className="font-medium" id="train-types-label">
+                  Junatyypit
+                </span>
               </div>
-              <div className="flex flex-wrap sm:flex-nowrap gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap gap-2" aria-labelledby="train-types-label">
                 <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
-                  <Label>Pendolino</Label>
+                  <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} aria-labelledby="pendolino-label" />
+                  <Label id="pendolino-label">Pendolino</Label>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
-                  <Label>InterCity</Label>
+                  <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} aria-labelledby="intercity-label" />
+                  <Label id="intercity-label">InterCity</Label>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
-                  <Label>Yöjuna</Label>
+                  <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} aria-labelledby="night-label" />
+                  <Label id="night-label">Yöjuna</Label>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
-                  <Label>Lähijuna</Label>
+                  <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} aria-labelledby="commuter-label" />
+                  <Label id="commuter-label">Lähijuna</Label>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
-                  <Label>Ratatyöbussi</Label>
+                  <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} aria-labelledby="bus-label" />
+                  <Label id="bus-label">Ratatyöbussi</Label>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} />
-                  <Label>Kiskobussi</Label>
+                  <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} aria-labelledby="railcar-label" />
+                  <Label id="railcar-label">Kiskobussi</Label>
                 </div>
               </div>
             </div>
@@ -647,13 +664,13 @@ export default function HomePage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button variant={reverse ? 'default' : 'outline'} size="icon" onClick={() => setReverse((prev) => !prev)}>
+                <Button variant={reverse ? 'default' : 'outline'} size="icon" onClick={() => setReverse((prev) => !prev)} aria-label="Vaihda järjestys">
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={hideSoldOut} onCheckedChange={setHideSoldOut} />
-                <Label>Piilota loppuunmyydyt</Label>
+                <Switch className="cursor-pointer" checked={hideSoldOut} onCheckedChange={setHideSoldOut} aria-labelledby="sold-out-label" />
+                <Label id="sold-out-label">Piilota loppuunmyydyt</Label>
               </div>
             </div>
           </div>
