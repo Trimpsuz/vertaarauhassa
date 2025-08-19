@@ -1,5 +1,6 @@
 'use client';
 
+import FloatingControls from '@/components/FloatingControls';
 import ResultCard from '@/components/ResultCard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -206,435 +207,459 @@ export default function HomePage() {
 
   if (searchResults.length === 0) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
-          <CardHeader className="text-center">
-            <CardTitle className={`text-xl sm:text-2xl font-bold ${poppins.className}`}>VertaaRauhassa</CardTitle>
-            <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Valitse matkustajien määrä' : ''}</CardDescription>
-            <div className="flex justify-center gap-2 mt-4">
-              <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 1 ? 'bg-primary' : 'bg-muted')} />
-              <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 2 ? 'bg-primary' : 'bg-muted')} />
-              <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 3 ? 'bg-primary' : 'bg-muted')} />
-            </div>
-          </CardHeader>
+      <>
+        <FloatingControls />
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
+            <CardHeader className="text-center">
+              <CardTitle className={`text-xl sm:text-2xl font-bold ${poppins.className}`}>VertaaRauhassa</CardTitle>
+              <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Valitse matkustajien määrä' : ''}</CardDescription>
+              <div className="flex justify-center gap-2 mt-4">
+                <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 1 ? 'bg-primary' : 'bg-muted')} />
+                <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 2 ? 'bg-primary' : 'bg-muted')} />
+                <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 3 ? 'bg-primary' : 'bg-muted')} />
+              </div>
+            </CardHeader>
 
-          <CardContent className="space-y-6">
-            {currentStep === 1 && (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Mistä
-                  </label>
-                  <Popover open={originOpen} onOpenChange={setOriginOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" role="combobox" aria-expanded={originOpen} className="w-full justify-between bg-transparent">
-                        {origin ? stationMap.get(origin) : 'Valitse lähtöasema...'}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full sm:min-w-[300px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Hae..." />
-                        <CommandList>
-                          <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
-                          <CommandGroup>
-                            {stations
-                              .filter((station) => station.key !== destination)
-                              .map((station) => (
-                                <CommandItem key={station.key} value={station.value} onSelect={() => handleOriginSelect(station.key)}>
-                                  <Check className={cn('mr-2 h-4 w-4', origin === station.key ? 'opacity-100' : 'opacity-0')} />
-                                  {station.value}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Navigation className="h-4 w-4" />
-                    Minne
-                  </label>
-                  <Popover open={destinationOpen} onOpenChange={setDestinationOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" role="combobox" aria-expanded={destinationOpen} className="w-full justify-between bg-transparent">
-                        {destination ? stationMap.get(destination) : 'Valitse kohdeasema...'}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full sm:min-w-[300px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Hae..." />
-                        <CommandList>
-                          <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
-                          <CommandGroup>
-                            {stations
-                              .filter((station) => station.key !== origin)
-                              .map((station) => (
-                                <CommandItem key={station.key} value={station.value} onSelect={() => handleDestinationSelect(station.key)}>
-                                  <Check className={cn('mr-2 h-4 w-4', destination === station.key ? 'opacity-100' : 'opacity-0')} />
-                                  {station.value}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <Button onClick={handleNextStep} disabled={!isStep1Valid} className="w-full py-2 sm:py-0" size="lg">
-                  Seuraava: Valitse hakuväli
-                </Button>
-              </>
-            )}
-
-            {currentStep === 2 && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="travel-date" className="text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Mistä
-                  </Label>
-                  <Input
-                    id="travel-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      setStartDate(e.target.value);
-                      if (!endDate || new Date(e.target.value) > new Date(endDate)) setEndDate(e.target.value);
-                    }}
-                    min={today}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="travel-date" className="text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Mihin
-                  </Label>
-                  <Input
-                    id="travel-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => {
-                      setEndDate(e.target.value);
-                      console.log(e.target.value);
-                    }}
-                    min={today}
-                    className="w-full"
-                  />
-
-                  <div className="flex flex-row gap-1">
-                    <Button
-                      variant="outline"
-                      disabled={!endDate}
-                      onClick={() => {
-                        setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 1)).toISOString().split('T')[0]);
-                      }}
-                    >
-                      +1 pv
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={!endDate}
-                      onClick={() => {
-                        setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 7)).toISOString().split('T')[0]);
-                      }}
-                    >
-                      +1 vk
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={!endDate}
-                      onClick={() => {
-                        setEndDate(new Date(new Date(endDate).setMonth(new Date(endDate).getMonth() + 1)).toISOString().split('T')[0]);
-                      }}
-                    >
-                      +1 kk
-                    </Button>
+            <CardContent className="space-y-6">
+              {currentStep === 1 && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Mistä
+                    </label>
+                    <Popover open={originOpen} onOpenChange={setOriginOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" aria-expanded={originOpen} className="w-full justify-between bg-transparent">
+                          {origin ? stationMap.get(origin) : 'Valitse lähtöasema...'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full sm:min-w-[300px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Hae..." />
+                          <CommandList>
+                            <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
+                            <CommandGroup>
+                              {stations
+                                .filter((station) => station.key !== destination)
+                                .map((station) => (
+                                  <CommandItem key={station.key} value={station.value} onSelect={() => handleOriginSelect(station.key)}>
+                                    <Check className={cn('mr-2 h-4 w-4', origin === station.key ? 'opacity-100' : 'opacity-0')} />
+                                    {station.value}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                </div>
 
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                  <h4 className="font-medium text-sm">Yhteenveto</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3 w-3" /> Mistä: {stationMap.get(origin)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Navigation className="h-3 w-3" /> Minne: {stationMap.get(destination)}
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Navigation className="h-4 w-4" />
+                      Minne
+                    </label>
+                    <Popover open={destinationOpen} onOpenChange={setDestinationOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" aria-expanded={destinationOpen} className="w-full justify-between bg-transparent">
+                          {destination ? stationMap.get(destination) : 'Valitse kohdeasema...'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full sm:min-w-[300px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Hae..." />
+                          <CommandList>
+                            <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
+                            <CommandGroup>
+                              {stations
+                                .filter((station) => station.key !== origin)
+                                .map((station) => (
+                                  <CommandItem key={station.key} value={station.value} onSelect={() => handleDestinationSelect(station.key)}>
+                                    <Check className={cn('mr-2 h-4 w-4', destination === station.key ? 'opacity-100' : 'opacity-0')} />
+                                    {station.value}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
-                    <ArrowLeft className="h-4 w-4" />
-                    Takaisin
+                  <Button onClick={handleNextStep} disabled={!isStep1Valid} className="w-full py-2 sm:py-0" size="lg">
+                    Seuraava: Valitse hakuväli
                   </Button>
-                  <Button onClick={handleNextStep} disabled={!isStep2Valid} size="lg" className="flex-1 py-2 sm:py-0">
-                    Seuraava: Matkustajien määrä
-                  </Button>
-                </div>
-              </>
-            )}
+                </>
+              )}
 
-            {currentStep === 3 && (
-              <>
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Matkustajat
-                  </Label>
-
-                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                    <div>
-                      <div className="font-medium text-sm">Aikuiset</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm" onClick={() => decrementPassenger('adults')} disabled={adults <= 0} className="h-8 w-8 p-0">
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">{adults}</span>
-                      <Button variant="outline" size="sm" onClick={() => incrementPassenger('adults')} disabled={adults >= 18 - (children + seniors + students + conscripts)} className="h-8 w-8 p-0">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+              {currentStep === 2 && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="travel-date" className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Mistä
+                    </Label>
+                    <Input
+                      id="travel-date"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        if (!endDate || new Date(e.target.value) > new Date(endDate)) setEndDate(e.target.value);
+                      }}
+                      min={today}
+                      className="w-full"
+                    />
                   </div>
 
-                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                    <div>
-                      <div className="font-medium text-sm">Lapset</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm" onClick={() => decrementPassenger('children')} disabled={children <= 0} className="h-8 w-8 p-0">
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">{children}</span>
-                      <Button variant="outline" size="sm" onClick={() => incrementPassenger('children')} disabled={children >= 18 - (adults + seniors + students + conscripts)} className="h-8 w-8 p-0">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="travel-date" className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Mihin
+                    </Label>
+                    <Input
+                      id="travel-date"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => {
+                        setEndDate(e.target.value);
+                        console.log(e.target.value);
+                      }}
+                      min={today}
+                      className="w-full"
+                    />
 
-                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                    <div>
-                      <div className="font-medium text-sm">Eläkeläiset</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm" onClick={() => decrementPassenger('seniors')} disabled={seniors <= 0} className="h-8 w-8 p-0">
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">{seniors}</span>
-                      <Button variant="outline" size="sm" onClick={() => incrementPassenger('seniors')} disabled={seniors >= 18 - (children + adults + students + conscripts)} className="h-8 w-8 p-0">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                    <div>
-                      <div className="font-medium text-sm">Opiskelijat</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm" onClick={() => decrementPassenger('students')} disabled={students <= 0} className="h-8 w-8 p-0">
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">{students}</span>
-                      <Button variant="outline" size="sm" onClick={() => incrementPassenger('students')} disabled={students >= 18 - (children + seniors + adults + conscripts)} className="h-8 w-8 p-0">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                    <div>
-                      <div className="font-medium text-sm">Asevelvolliset</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm" onClick={() => decrementPassenger('conscripts')} disabled={conscripts <= 0} className="h-8 w-8 p-0">
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">{conscripts}</span>
+                    <div className="flex flex-row gap-1">
                       <Button
                         variant="outline"
-                        size="sm"
-                        onClick={() => incrementPassenger('conscripts')}
-                        disabled={conscripts >= 18 - (children + seniors + students + adults)}
-                        className="h-8 w-8 p-0"
+                        disabled={!endDate}
+                        onClick={() => {
+                          setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 1)).toISOString().split('T')[0]);
+                        }}
                       >
-                        <Plus className="h-4 w-4" />
+                        +1 pv
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={!endDate}
+                        onClick={() => {
+                          setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 7)).toISOString().split('T')[0]);
+                        }}
+                      >
+                        +1 vk
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={!endDate}
+                        onClick={() => {
+                          setEndDate(new Date(new Date(endDate).setMonth(new Date(endDate).getMonth() + 1)).toISOString().split('T')[0]);
+                        }}
+                      >
+                        +1 kk
                       </Button>
                     </div>
                   </div>
 
-                  {adults + children + seniors + students + conscripts == 18 && (
-                    <Alert variant="default">
-                      <Info />
-                      <AlertTitle>Voit lisätä enintään 18 matkustajaa</AlertTitle>
-                      <AlertDescription>
-                        <p>
-                          Yli 18 hengen matkat varataan{' '}
-                          <a className="underline" href="https://www.vr.fi/palvelut-junassa/palvelut-ryhmille">
-                            ryhmämyynnin kautta
-                          </a>
-                        </p>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                  <h4 className="font-medium text-sm">Yhteenveto</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3 w-3" /> Mistä: {stationMap.get(origin)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Navigation className="h-3 w-3" /> Minne: {stationMap.get(destination)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3" /> Milloin: {startDate} - {endDate}
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                    <h4 className="font-medium text-sm">Yhteenveto</h4>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3" /> Mistä: {stationMap.get(origin)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Navigation className="h-3 w-3" /> Minne: {stationMap.get(destination)}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
-                    <ArrowLeft className="h-4 w-4" />
-                    Takaisin
-                  </Button>
-                  <Button onClick={handleNextStep} disabled={!isStep3Valid || loading} size="lg" className="flex-1 py-2 sm:py-0">
-                    {loading && <Loader2Icon className="animate-spin" />}
-                    Hae
-                  </Button>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
+                      <ArrowLeft className="h-4 w-4" />
+                      Takaisin
+                    </Button>
+                    <Button onClick={handleNextStep} disabled={!isStep2Valid} size="lg" className="flex-1 py-2 sm:py-0">
+                      Seuraava: Matkustajien määrä
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {currentStep === 3 && (
+                <>
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Matkustajat
+                    </Label>
+
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
+                      <div>
+                        <div className="font-medium text-sm">Aikuiset</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('adults')} disabled={adults <= 0} className="h-8 w-8 p-0">
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{adults}</span>
+                        <Button variant="outline" size="sm" onClick={() => incrementPassenger('adults')} disabled={adults >= 18 - (children + seniors + students + conscripts)} className="h-8 w-8 p-0">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
+                      <div>
+                        <div className="font-medium text-sm">Lapset</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('children')} disabled={children <= 0} className="h-8 w-8 p-0">
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{children}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => incrementPassenger('children')}
+                          disabled={children >= 18 - (adults + seniors + students + conscripts)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
+                      <div>
+                        <div className="font-medium text-sm">Eläkeläiset</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('seniors')} disabled={seniors <= 0} className="h-8 w-8 p-0">
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{seniors}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => incrementPassenger('seniors')}
+                          disabled={seniors >= 18 - (children + adults + students + conscripts)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
+                      <div>
+                        <div className="font-medium text-sm">Opiskelijat</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('students')} disabled={students <= 0} className="h-8 w-8 p-0">
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{students}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => incrementPassenger('students')}
+                          disabled={students >= 18 - (children + seniors + adults + conscripts)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
+                      <div>
+                        <div className="font-medium text-sm">Asevelvolliset</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('conscripts')} disabled={conscripts <= 0} className="h-8 w-8 p-0">
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{conscripts}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => incrementPassenger('conscripts')}
+                          disabled={conscripts >= 18 - (children + seniors + students + adults)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {adults + children + seniors + students + conscripts == 18 && (
+                      <Alert variant="default">
+                        <Info />
+                        <AlertTitle>Voit lisätä enintään 18 matkustajaa</AlertTitle>
+                        <AlertDescription>
+                          <p>
+                            Yli 18 hengen matkat varataan{' '}
+                            <a className="underline" href="https://www.vr.fi/palvelut-junassa/palvelut-ryhmille">
+                              ryhmämyynnin kautta
+                            </a>
+                          </p>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                    <h4 className="font-medium text-sm">Yhteenveto</h4>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3" /> Mistä: {stationMap.get(origin)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Navigation className="h-3 w-3" /> Minne: {stationMap.get(destination)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3 w-3" /> Milloin: {startDate} - {endDate}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
+                      <ArrowLeft className="h-4 w-4" />
+                      Takaisin
+                    </Button>
+                    <Button onClick={handleNextStep} disabled={!isStep3Valid || loading} size="lg" className="flex-1 py-2 sm:py-0">
+                      {loading && <Loader2Icon className="animate-spin" />}
+                      Hae
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </>
     );
   } else {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 flex-col gap-6">
-        <h1 className={`text-xl sm:text-2xl font-bold text-center ${poppins.className}`}>
-          {searchResults[0].departureStationName} - {searchResults[0].arrivalStationName}
-        </h1>
+      <>
+        <FloatingControls showScroll={true} />
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 flex-col gap-6">
+          <h1 className={`text-xl sm:text-2xl font-bold text-center ${poppins.className}`}>
+            {searchResults[0].departureStationName} - {searchResults[0].arrivalStationName}
+          </h1>
 
-        <div className="flex flex-col gap-3 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Shuffle className="h-4 w-4" />
-              <span className="font-medium">Vaihdot</span>
+          <div className="flex flex-col gap-3 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Shuffle className="h-4 w-4" />
+                <span className="font-medium">Vaihdot</span>
+              </div>
+              <RadioGroup className="flex flex-wrap sm:flex-nowrap gap-2" value={changeCount} onValueChange={setChangeCount} defaultValue="any">
+                {[
+                  { value: 'any', label: 'Kaikki' },
+                  { value: 'direct', label: 'Vain suorat' },
+                  { value: '1', label: 'Yksi tai vähemmän' },
+                  { value: '2', label: 'Kaksi tai vähemmän' },
+                ].map((opt) => (
+                  <div key={opt.value} className="flex items-center space-x-1">
+                    <RadioGroupItem className="cursor-pointer" value={opt.value} id={`option-${opt.value}`} />
+                    <Label className="cursor-pointer" htmlFor={`option-${opt.value}`}>
+                      {opt.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
             </div>
-            <RadioGroup className="flex flex-wrap sm:flex-nowrap gap-2" value={changeCount} onValueChange={setChangeCount} defaultValue="any">
-              {[
-                { value: 'any', label: 'Kaikki' },
-                { value: 'direct', label: 'Vain suorat' },
-                { value: '1', label: 'Yksi tai vähemmän' },
-                { value: '2', label: 'Kaksi tai vähemmän' },
-              ].map((opt) => (
-                <div key={opt.value} className="flex items-center space-x-1">
-                  <RadioGroupItem className="cursor-pointer" value={opt.value} id={`option-${opt.value}`} />
-                  <Label className="cursor-pointer" htmlFor={`option-${opt.value}`}>
-                    {opt.label}
-                  </Label>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex items-center gap-1">
+                <TrainFront className="h-4 w-4" />
+                <span className="font-medium">Junatyypit</span>
+              </div>
+              <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                <div className="flex items-center space-x-1">
+                  <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
+                  <Label>Pendolino</Label>
                 </div>
-              ))}
-            </RadioGroup>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="flex items-center gap-1">
-              <TrainFront className="h-4 w-4" />
-              <span className="font-medium">Junatyypit</span>
-            </div>
-            <div className="flex flex-wrap sm:flex-nowrap gap-2">
-              <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
-                <Label>Pendolino</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
-                <Label>InterCity</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
-                <Label>Yöjuna</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
-                <Label>Lähijuna</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
-                <Label>Ratatyöbussi</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} />
-                <Label>Kiskobussi</Label>
+                <div className="flex items-center space-x-1">
+                  <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
+                  <Label>InterCity</Label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
+                  <Label>Yöjuna</Label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
+                  <Label>Lähijuna</Label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
+                  <Label>Ratatyöbussi</Label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} />
+                  <Label>Kiskobussi</Label>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
-            <div className="flex flex-row gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    Lajittele: {sortOptionNames.get(sort)}
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {sortOptions.map((option) => (
-                    <DropdownMenuItem key={option} onClick={() => setSort(option)} className={`cursor-pointer ${sort === option ? 'bg-muted' : ''}`}>
-                      {sortOptionNames.get(option)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+              <div className="flex flex-row gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      Lajittele: {sortOptionNames.get(sort)}
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {sortOptions.map((option) => (
+                      <DropdownMenuItem key={option} onClick={() => setSort(option)} className={`cursor-pointer ${sort === option ? 'bg-muted' : ''}`}>
+                        {sortOptionNames.get(option)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              <Button variant={reverse ? 'default' : 'outline'} size="icon" onClick={() => setReverse((prev) => !prev)}>
-                <ArrowUpDown className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Switch className="cursor-pointer" checked={hideSoldOut} onCheckedChange={setHideSoldOut} />
-              <Label>Piilota loppuunmyydyt</Label>
+                <Button variant={reverse ? 'default' : 'outline'} size="icon" onClick={() => setReverse((prev) => !prev)}>
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Switch className="cursor-pointer" checked={hideSoldOut} onCheckedChange={setHideSoldOut} />
+                <Label>Piilota loppuunmyydyt</Label>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-2 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
-          {sortedFilteredSearchResults.length > 0 ? (
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            sortedFilteredSearchResults.map((result: any) => <ResultCard key={result.id} result={result} openSale={openSale} />)
-          ) : (
-            <Alert variant="default">
-              <Info />
-              <AlertTitle>Matkoja ei löytynyt</AlertTitle>
-              <AlertDescription>
-                <p>Kokeile muuttaa rajausehtoja</p>
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
+          <div className="flex flex-col gap-2 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
+            {sortedFilteredSearchResults.length > 0 ? (
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              sortedFilteredSearchResults.map((result: any) => <ResultCard key={result.id} result={result} openSale={openSale} />)
+            ) : (
+              <Alert variant="default">
+                <Info />
+                <AlertTitle>Matkoja ei löytynyt</AlertTitle>
+                <AlertDescription>
+                  <p>Kokeile muuttaa rajausehtoja</p>
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
 
-        <div className="flex flex-row w-full max-w-md sm:max-w-xl justify-center">
-          <Button onClick={handlePreviousStep} variant="outline" className="w-full bg-transparent">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Takaisin
-          </Button>
+          <div className="flex flex-row w-full max-w-md sm:max-w-xl justify-center">
+            <Button onClick={handlePreviousStep} variant="outline" className="w-full bg-transparent">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Takaisin
+            </Button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 }
