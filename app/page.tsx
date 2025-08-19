@@ -161,6 +161,7 @@ export default function HomePage() {
     } else if (currentStep === 3 && 19 > adults + children + seniors + students + conscripts && adults + children + seniors + students + conscripts > 0) {
       setLoading(true);
       const results = await searchJourney(origin, destination, startDate, endDate, adults, children, seniors, students, conscripts);
+      setLoading(false);
       if (results.length === 0) {
         toast.error('Matkoja ei löytynyt', {
           description: 'Kokeile palata takaisin ja muuttaa hakuehtoja',
@@ -169,7 +170,6 @@ export default function HomePage() {
       }
       setSearchResults(results);
       setCurrentStep(4);
-      setLoading(false);
     }
   };
 

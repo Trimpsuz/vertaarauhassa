@@ -34,53 +34,69 @@ export const searchJourney = async (
     passengers.push({ key: uuidv4(), type: 'CONSCRIPT', wheelchair: false, vehicles: [] });
   }
 
-  const requests = dates.map((date) =>
-    axios.post('/api/v7', {
-      operationName: 'searchJourney',
-      variables: {
-        filters: [],
-        arrivalStation: destination,
-        departureStation: origin,
-        departureDateTime: date,
-        passengers: passengers,
-        placeTypes: ['SEAT', 'CABIN_BED'],
-      },
-      extensions: {
-        persistedQuery: {
-          version: 1,
-          sha256Hash: '137b82599f60fe662143194950e3a49469822bdddea4c1e360948cb979e946bd',
+  try {
+    const requests = dates.map((date) =>
+      axios.post('/api/v7', {
+        operationName: 'searchJourney',
+        variables: {
+          filters: [],
+          arrivalStation: destination,
+          departureStation: origin,
+          departureDateTime: date,
+          passengers,
+          placeTypes: ['SEAT', 'CABIN_BED'],
         },
-      },
-    })
-  );
+        extensions: {
+          persistedQuery: {
+            version: 1,
+            sha256Hash: '137b82599f60fe662143194950e3a49469822bdddea4c1e360948cb979e946bd',
+          },
+        },
+      })
+    );
 
-  const responses = await Promise.all(requests);
+    const responses = await Promise.all(requests);
 
-  const errors: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const results: any[] = [];
+    responses.forEach((res) => {
+      if (res.data.errors?.length) {
+        toast.error(res.data.errors[0].message);
+      } else {
+        results.push(...parse(res.data));
+      }
+    });
 
-  const results = responses.flatMap((res) => {
-    if (res.data.errors) {
-      errors.push(res.data.errors[0].message);
-      return [];
-    }
-    return parse(res.data);
-  });
-
-  errors.forEach((error) => {
-    toast.error(error);
-  });
-
-  return results;
+    return results;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    toast.error(err.response?.data?.errors[0]?.message || `Request failed: ${err.message}`);
+    return [];
+  }
 };
 
 export const createSale = async (id: string) => {
-  const response = (
-    await axios.post('/api/v7', {
+  try {
+    const response = await axios.post('/api/v7', {
       operationName: 'createNewSale',
       variables: { journeyOptionId: id },
-      extensions: { persistedQuery: { version: 1, sha256Hash: 'c6588f738f893106699499fe77e313f7e1a5d960f44cce9aa8fc5ec6a00d9a30' } },
-    })
-  ).data;
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: 'c6588f738f893106699499fe77e313f7e1a5d960f44cce9aa8fc5ec6a00d9a30',
+        },
+      },
+    });
 
-  return response;
+    if (response.data.errors?.length) {
+      toast.error(response.data.errors[0].message);
+      return null;
+    }
+
+    return response.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    toast.error(err.response?.data?.errors[0]?.message || `Request failed: ${err.message}`);
+    return null;
+  }
 };
