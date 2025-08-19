@@ -215,7 +215,7 @@ export default function HomePage() {
         <Card className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
           <CardHeader className="text-center">
             <CardTitle className={`text-xl sm:text-2xl font-bold ${poppins.className}`}>VertaaRauhassa</CardTitle>
-            <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Matkustajien määrä' : ''}</CardDescription>
+            <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Valitse matkustajien määrä' : ''}</CardDescription>
             <div className="flex justify-center gap-2 mt-4">
               <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 1 ? 'bg-primary' : 'bg-muted')} />
               <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 2 ? 'bg-primary' : 'bg-muted')} />
@@ -534,7 +534,7 @@ export default function HomePage() {
 
         <div className="flex flex-col gap-3 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Shuffle className="h-4 w-4" />
               <span className="font-medium">Vaihdot</span>
             </div>
@@ -555,30 +555,36 @@ export default function HomePage() {
             </RadioGroup>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center space-x-1">
-              <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
-              <Label>Pendolino</Label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-1">
+              <TrainFront className="h-4 w-4" />
+              <span className="font-medium">Junatyypit</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
-              <Label>InterCity</Label>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
-              <Label>Yöjuna</Label>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
-              <Label>Lähijuna</Label>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
-              <Label>Ratatyöbussi</Label>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} />
-              <Label>Kiskobussi</Label>
+            <div className="flex flex-wrap sm:flex-nowrap gap-2">
+              <div className="flex items-center space-x-1">
+                <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} />
+                <Label>Pendolino</Label>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} />
+                <Label>InterCity</Label>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} />
+                <Label>Yöjuna</Label>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} />
+                <Label>Lähijuna</Label>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} />
+                <Label>Ratatyöbussi</Label>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} />
+                <Label>Kiskobussi</Label>
+              </div>
             </div>
           </div>
 
