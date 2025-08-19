@@ -327,7 +327,7 @@ export default function HomePage() {
                       value={endDate}
                       onChange={(e) => {
                         setEndDate(e.target.value);
-                        console.log(e.target.value);
+                        if (startDate && new Date(e.target.value) < new Date(startDate)) setStartDate(e.target.value);
                       }}
                       min={today}
                       className="w-full"
