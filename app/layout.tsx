@@ -5,6 +5,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { getBaseURL } from '@/lib/deployment';
+import { Analytics } from '@vercel/analytics/next';
 
 const sourceSans = Source_Sans_3({
   subsets: ['latin'],
@@ -35,6 +36,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
