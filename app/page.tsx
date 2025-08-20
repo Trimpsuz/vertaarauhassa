@@ -49,7 +49,7 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<any>([]);
   const [sort, setSort] = useState('startTime');
   const [reverse, setReverse] = useState(false);
-  const [hideSoldOut, setHideSoldOut] = useState(false);
+  const [hideSoldOut, setHideSoldOut] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers', 'fill'];
