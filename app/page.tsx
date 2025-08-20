@@ -17,7 +17,7 @@ import { stationMap } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, Shuffle, TrainFront, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const poppins = Poppins({
@@ -51,6 +51,16 @@ export default function HomePage() {
   const [reverse, setReverse] = useState(false);
   const [hideSoldOut, setHideSoldOut] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('showAlertModal');
+    if (saved) setShowAlertModal(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('showAlertModal', JSON.stringify(showAlertModal));
+  }, [showAlertModal]);
 
   const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers', 'fill'];
   const sortOptionNames = new Map<string, string>([
@@ -127,7 +137,7 @@ export default function HomePage() {
   const openSale = async (id: string) => {
     let saleId = createdSales.get(id);
     if (saleId) {
-      window.open(`https://www.vr.fi/kertalippu-menomatkan-tiedot?saleId=${saleId}`, '_blank');
+      window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
       return;
     }
 
@@ -140,7 +150,7 @@ export default function HomePage() {
     saleId = res.data.createNewSale.id;
     createdSales.set(id, saleId!);
 
-    window.open(`https://www.vr.fi/kertalippu-menomatkan-tiedot?saleId=${saleId}`, '_blank');
+    window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
   };
 
   const handleOriginSelect = (stationKey: string) => {
@@ -678,7 +688,7 @@ export default function HomePage() {
           <div className="flex flex-col gap-2 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
             {sortedFilteredSearchResults.length > 0 ? (
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              sortedFilteredSearchResults.map((result: any) => <ResultCard key={result.id} result={result} openSale={openSale} />)
+              sortedFilteredSearchResults.map((result: any) => <ResultCard key={result.id} result={result} openSale={openSale} showAlertModal={showAlertModal} setShowAlertModal={setShowAlertModal} />)
             ) : (
               <Alert variant="default">
                 <Info />
