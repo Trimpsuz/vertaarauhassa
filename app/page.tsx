@@ -142,10 +142,7 @@ export default function HomePage() {
     }
 
     const res = await createSale(id);
-    if (res.errors) {
-      toast(res.errors[0].message);
-      return;
-    }
+    if (!res) return;
 
     saleId = res.data.createNewSale.id;
     createdSales.set(id, saleId!);
