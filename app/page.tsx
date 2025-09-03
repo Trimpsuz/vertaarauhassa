@@ -14,8 +14,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { createSale, searchJourney } from '@/lib/api';
 import { stationMap } from '@/lib/constants';
-import { cn } from '@/lib/utils';
-import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, Shuffle, TrainFront, Users } from 'lucide-react';
+import { cn, inRange } from '@/lib/utils';
+import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Clock, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, RotateCcw, Shuffle, TrainFront, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -52,6 +52,10 @@ export default function HomePage() {
   const [hideSoldOut, setHideSoldOut] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(true);
+  const [departureTimeStart, setDepartureTimeStart] = useState('00:00');
+  const [departureTimeEnd, setDepartureTimeEnd] = useState('23:59');
+  const [arrivalTimeStart, setArrivalTimeStart] = useState('00:00');
+  const [arrivalTimeEnd, setArrivalTimeEnd] = useState('23:59');
 
   useEffect(() => {
     const saved = localStorage.getItem('showAlertModal');
@@ -97,9 +101,25 @@ export default function HomePage() {
 
       const soldOut = hideSoldOut && result.error === 'SOLD_OUT';
 
-      return matchesType && matchesTransfers && !soldOut;
+      const matchesTime = inRange(result.departureTime.substring(11, 16), departureTimeStart, departureTimeEnd) && inRange(result.arrivalTime.substring(11, 16), arrivalTimeStart, arrivalTimeEnd);
+
+      return matchesType && matchesTransfers && !soldOut && matchesTime;
     });
-  }, [searchResults, allowPendolino, allowInterCity, allowBus, allowNight, allowCommuter, allowRailCar, changeCount, hideSoldOut]);
+  }, [
+    searchResults,
+    allowPendolino,
+    allowInterCity,
+    allowBus,
+    allowNight,
+    allowCommuter,
+    allowRailCar,
+    changeCount,
+    hideSoldOut,
+    departureTimeStart,
+    departureTimeEnd,
+    arrivalTimeStart,
+    arrivalTimeEnd,
+  ]);
 
   const sortedFilteredSearchResults = useMemo(() => {
     return [...filteredSearchResults].sort((a, b) => {
@@ -541,7 +561,7 @@ export default function HomePage() {
                         <Navigation className="h-3 w-3" /> Minne: {stationMap.get(destination)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-3 w-3" /> Milloin: {startDate} - {endDate}
+                        <Calendar className="h-3 w-3" /> Milloin: {startDate} – {endDate}
                       </div>
                     </div>
                   </div>
@@ -590,7 +610,7 @@ export default function HomePage() {
         <FloatingControls showScroll={true} />
         <div className="min-h-screen bg-background flex items-center justify-center p-4 flex-col gap-6">
           <h1 className={`text-xl sm:text-2xl font-bold text-center ${poppins.className}`}>
-            {searchResults[0].departureStationName} - {searchResults[0].arrivalStationName}
+            {searchResults[0].departureStationName} – {searchResults[0].arrivalStationName}
           </h1>
 
           <div className="flex flex-col gap-3 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
@@ -651,6 +671,82 @@ export default function HomePage() {
                   <Label id="railcar-label">Kiskobussi</Label>
                 </div>
               </div>
+            </div>
+
+            <div className="flex flex-row gap-2">
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span className="font-medium" id="departure-time-label">
+                  Lähtöaika
+                </span>
+              </div>
+              <div className="flex flex-row gap-1 items-center" aria-labelledby="departure-time-label">
+                <Input
+                  type="time"
+                  id="time-picker"
+                  step="0"
+                  value={departureTimeStart}
+                  onChange={(e) => setDepartureTimeStart(e.target.value)}
+                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
+                />
+                <span>–</span>
+                <Input
+                  type="time"
+                  id="time-picker"
+                  step="0"
+                  value={departureTimeEnd}
+                  onChange={(e) => setDepartureTimeEnd(e.target.value)}
+                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
+                />
+              </div>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => {
+                  setDepartureTimeStart('00:00');
+                  setDepartureTimeEnd('23:59');
+                }}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex flex-row gap-2">
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span className="font-medium" id="arrival-time-label">
+                  Saapumisaika
+                </span>
+              </div>
+              <div className="flex flex-row gap-1 items-center" aria-labelledby="arrival-time-label">
+                <Input
+                  type="time"
+                  id="time-picker"
+                  step="0"
+                  value={arrivalTimeStart}
+                  onChange={(e) => setArrivalTimeStart(e.target.value)}
+                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
+                />
+                <span>–</span>
+                <Input
+                  type="time"
+                  id="time-picker"
+                  step="0"
+                  value={arrivalTimeEnd}
+                  onChange={(e) => setArrivalTimeEnd(e.target.value)}
+                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
+                />
+              </div>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => {
+                  setArrivalTimeStart('00:00');
+                  setArrivalTimeEnd('23:59');
+                }}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">

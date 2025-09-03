@@ -81,3 +81,15 @@ export function formatTime(ms: number) {
 
   return parts.join(' ');
 }
+
+const toMins = (t: string) => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+export const inRange = (t: string, start: string, end: string) => {
+  const tm = toMins(t),
+    s = toMins(start),
+    e = toMins(end);
+  return s <= e ? tm >= s && tm <= e : tm >= s || tm <= e;
+};
