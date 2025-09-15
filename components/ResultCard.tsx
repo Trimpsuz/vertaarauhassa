@@ -71,9 +71,9 @@ const ResultCardComponent = ({
         <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-sm">
           <div className={`flex flex-col gap-1 ${result.error ? 'text-[#a0988b]' : ''}`}>
             <div className="flex flex-row items-center gap-2 font-semibold text-base sm:text-lg">
-              <span>{formatDate(new Date(result.departureTime))}</span>
+              <time dateTime={new Date(result.departureTime).toISOString()}>{formatDate(new Date(result.departureTime))}</time>
               <span>→</span>
-              <span>{formatDate(new Date(result.arrivalTime))}</span>
+              <time dateTime={new Date(result.arrivalTime).toISOString()}>{formatDate(new Date(result.arrivalTime))}</time>
             </div>
             <div className="flex flex-wrap items-start sm:items-center gap-2 text-sm flex-col sm:flex-row">
               <div className="flex flex-row gap-2">
