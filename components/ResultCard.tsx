@@ -45,6 +45,18 @@ const ResultCardComponent = ({
     setOpen(false);
   };
 
+  const formatDate = (date: Date) => date
+    .toLocaleTimeString('fi-FI', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: 'numeric',
+      month: 'numeric',
+      weekday: 'short'
+    })
+    .split(' ')
+    .filter((str) => str !== 'klo')
+    .join(' ')
+
   return (
     <>
       <Card
@@ -59,31 +71,9 @@ const ResultCardComponent = ({
         <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-sm">
           <div className={`flex flex-col gap-1 ${result.error ? 'text-[#a0988b]' : ''}`}>
             <div className="flex flex-row items-center gap-2 font-semibold text-base sm:text-lg">
-              <span>
-                {new Date(result.departureTime)
-                  .toLocaleTimeString('fi-FI', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    day: 'numeric',
-                    month: 'numeric',
-                  })
-                  .split(' ')
-                  .filter((str) => str !== 'klo')
-                  .join(' ')}
-              </span>
+              <time dateTime={new Date(result.departureTime).toISOString()}>{formatDate(new Date(result.departureTime))}</time>
               <span>→</span>
-              <span>
-                {new Date(result.arrivalTime)
-                  .toLocaleTimeString('fi-FI', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    day: 'numeric',
-                    month: 'numeric',
-                  })
-                  .split(' ')
-                  .filter((str) => str !== 'klo')
-                  .join(' ')}
-              </span>
+              <time dateTime={new Date(result.arrivalTime).toISOString()}>{formatDate(new Date(result.arrivalTime))}</time>
             </div>
             <div className="flex flex-wrap items-start sm:items-center gap-2 text-sm flex-col sm:flex-row">
               <div className="flex flex-row gap-2">
