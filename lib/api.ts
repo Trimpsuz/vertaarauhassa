@@ -12,7 +12,8 @@ export const searchJourney = async (
   children: number,
   seniors: number,
   students: number,
-  conscripts: number
+  conscripts: number,
+  fdfContract: number
 ) => {
   const dates = getDatesInRange(startDate, endDate);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +33,9 @@ export const searchJourney = async (
   }
   for (let i = 0; i < conscripts; i++) {
     passengers.push({ key: uuidv4(), type: 'CONSCRIPT', wheelchair: false, vehicles: [] });
+  }
+  for (let i = 0; i < fdfContract; i++) {
+    passengers.push({ key: uuidv4(), type: 'FDF_CONTRACT', wheelchair: false, vehicles: [] });
   }
 
   try {

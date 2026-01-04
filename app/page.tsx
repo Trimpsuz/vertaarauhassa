@@ -38,6 +38,7 @@ export default function HomePage() {
   const [seniors, setSeniors] = useState(0);
   const [students, setStudents] = useState(0);
   const [conscripts, setConscripts] = useState(0);
+  const [fdfContract, setFdfContract] = useState(0);
   const [changeCount, setChangeCount] = useState('any');
   const [allowPendolino, setAllowPendolino] = useState(true);
   const [allowInterCity, setAllowInterCity] = useState(true);
@@ -185,9 +186,9 @@ export default function HomePage() {
       setCurrentStep(2);
     } else if (currentStep === 2 && startDate && endDate) {
       setCurrentStep(3);
-    } else if (currentStep === 3 && 19 > adults + children + seniors + students + conscripts && adults + children + seniors + students + conscripts > 0) {
+    } else if (currentStep === 3 && 19 > adults + children + seniors + students + conscripts + fdfContract && adults + children + seniors + students + conscripts + fdfContract > 0) {
       setLoading(true);
-      const results = await searchJourney(origin, destination, startDate, endDate, adults, children, seniors, students, conscripts);
+      const results = await searchJourney(origin, destination, startDate, endDate, adults, children, seniors, students, conscripts, fdfContract);
       setLoading(false);
       if (results.length === 0) {
         toast.error('Matkoja ei löytynyt', {
@@ -210,25 +211,27 @@ export default function HomePage() {
     }
   };
 
-  const incrementPassenger = (type: 'adults' | 'children' | 'seniors' | 'students' | 'conscripts') => {
-    if (type === 'adults') setAdults((prev) => Math.min(prev + 1, 18 - (children + seniors + students + conscripts)));
-    if (type === 'children') setChildren((prev) => Math.min(prev + 1, 18 - (adults + seniors + students + conscripts)));
-    if (type === 'seniors') setSeniors((prev) => Math.min(prev + 1, 18 - (children + adults + students + conscripts)));
-    if (type === 'students') setStudents((prev) => Math.min(prev + 1, 18 - (children + adults + seniors + conscripts)));
-    if (type === 'conscripts') setConscripts((prev) => Math.min(prev + 1, 18 - (children + adults + students + seniors)));
+  const incrementPassenger = (type: 'adults' | 'children' | 'seniors' | 'students' | 'conscripts' | 'fdfContract') => {
+    if (type === 'adults') setAdults((prev) => Math.min(prev + 1, 18 - (children + seniors + students + conscripts + fdfContract)));
+    if (type === 'children') setChildren((prev) => Math.min(prev + 1, 18 - (adults + seniors + students + conscripts + fdfContract)));
+    if (type === 'seniors') setSeniors((prev) => Math.min(prev + 1, 18 - (children + adults + students + conscripts + fdfContract)));
+    if (type === 'students') setStudents((prev) => Math.min(prev + 1, 18 - (children + adults + seniors + conscripts + fdfContract)));
+    if (type === 'conscripts') setConscripts((prev) => Math.min(prev + 1, 18 - (children + adults + students + seniors + fdfContract)));
+    if (type === 'fdfContract') setFdfContract((prev) => Math.min(prev + 1, 18 - (children + adults + students + seniors + conscripts)));
   };
 
-  const decrementPassenger = (type: 'adults' | 'children' | 'seniors' | 'students' | 'conscripts') => {
+  const decrementPassenger = (type: 'adults' | 'children' | 'seniors' | 'students' | 'conscripts' | 'fdfContract') => {
     if (type === 'adults') setAdults((prev) => Math.max(prev - 1, 0));
     if (type === 'children') setChildren((prev) => Math.max(prev - 1, 0));
     if (type === 'seniors') setSeniors((prev) => Math.max(prev - 1, 0));
     if (type === 'students') setStudents((prev) => Math.max(prev - 1, 0));
     if (type === 'conscripts') setConscripts((prev) => Math.max(prev - 1, 0));
+    if (type === 'fdfContract') setFdfContract((prev) => Math.max(prev - 1, 0));
   };
 
   const isStep1Valid = origin && destination && origin !== destination;
   const isStep2Valid = startDate && endDate;
-  const isStep3Valid = 19 > adults + children + seniors + students + conscripts && adults + children + seniors + students + conscripts > 0;
+  const isStep3Valid = 19 > adults + children + seniors + students + conscripts + fdfContract && adults + children + seniors + students + conscripts + fdfContract > 0;
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -438,7 +441,7 @@ export default function HomePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => incrementPassenger('adults')}
-                          disabled={adults >= 18 - (children + seniors + students + conscripts)}
+                          disabled={adults >= 18 - (children + seniors + students + conscripts + fdfContract)}
                           className="h-8 w-8 p-0"
                           aria-label="Aikuiset +"
                         >
@@ -460,7 +463,7 @@ export default function HomePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => incrementPassenger('children')}
-                          disabled={children >= 18 - (adults + seniors + students + conscripts)}
+                          disabled={children >= 18 - (adults + seniors + students + conscripts + fdfContract)}
                           className="h-8 w-8 p-0"
                           aria-label="Lapset +"
                         >
@@ -482,7 +485,7 @@ export default function HomePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => incrementPassenger('seniors')}
-                          disabled={seniors >= 18 - (children + adults + students + conscripts)}
+                          disabled={seniors >= 18 - (children + adults + students + conscripts + fdfContract)}
                           className="h-8 w-8 p-0"
                           aria-label="Eläkeläiset +"
                         >
@@ -504,7 +507,7 @@ export default function HomePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => incrementPassenger('students')}
-                          disabled={students >= 18 - (children + seniors + adults + conscripts)}
+                          disabled={students >= 18 - (children + seniors + adults + conscripts + fdfContract)}
                           className="h-8 w-8 p-0"
                           aria-label="Opiskelijat +"
                         >
@@ -526,7 +529,7 @@ export default function HomePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => incrementPassenger('conscripts')}
-                          disabled={conscripts >= 18 - (children + seniors + students + adults)}
+                          disabled={conscripts >= 18 - (children + seniors + students + adults + fdfContract)}
                           className="h-8 w-8 p-0"
                           aria-label="Asevelvolliset +"
                         >
@@ -535,7 +538,36 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {adults + children + seniors + students + conscripts == 18 && (
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
+                      <div>
+                        <div className="font-medium text-sm">Asevelvolliset, palvelusmatka</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => decrementPassenger('fdfContract')}
+                          disabled={fdfContract <= 0}
+                          className="h-8 w-8 p-0"
+                          aria-label="Asevelvolliset, palvelusmatka −"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center font-medium">{fdfContract}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => incrementPassenger('fdfContract')}
+                          disabled={fdfContract >= 18 - (children + seniors + students + adults + conscripts)}
+                          className="h-8 w-8 p-0"
+                          aria-label="Asevelvolliset, palvelusmatka +"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {adults + children + seniors + students + conscripts + fdfContract == 18 && (
                       <Alert variant="default">
                         <Info />
                         <AlertTitle>Voit lisätä enintään 18 matkustajaa</AlertTitle>
