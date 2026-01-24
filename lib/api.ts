@@ -13,7 +13,7 @@ export const searchJourney = async (
   seniors: number,
   students: number,
   conscripts: number,
-  fdfContract: number
+  fdfContract: number,
 ) => {
   const dates = getDatesInRange(startDate, endDate);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,10 +53,10 @@ export const searchJourney = async (
         extensions: {
           persistedQuery: {
             version: 1,
-            sha256Hash: '137b82599f60fe662143194950e3a49469822bdddea4c1e360948cb979e946bd',
+            sha256Hash: '0e21bfbc72aed963b87dbdfa056bf3bbe1c714d98ba1cf3c79cdc04a4da3ef25',
           },
         },
-      })
+      }),
     );
 
     const responses = await Promise.all(requests);
