@@ -57,6 +57,18 @@ export default function HomePage() {
   const [departureTimeEnd, setDepartureTimeEnd] = useState('23:59');
   const [arrivalTimeStart, setArrivalTimeStart] = useState('00:00');
   const [arrivalTimeEnd, setArrivalTimeEnd] = useState('23:59');
+  const [allowedDepartureDays, setAllowedDepartureDays] = useState([0, 1, 2, 3, 4, 5, 6]);
+  const [allowedArrivalDays, setAllowedArrivalDays] = useState([0, 1, 2, 3, 4, 5, 6]);
+
+  const weekdays = [
+    { label: 'Su', value: 0 },
+    { label: 'Ma', value: 1 },
+    { label: 'Ti', value: 2 },
+    { label: 'Ke', value: 3 },
+    { label: 'To', value: 4 },
+    { label: 'Pe', value: 5 },
+    { label: 'La', value: 6 },
+  ];
 
   useEffect(() => {
     const saved = localStorage.getItem('showAlertModal');
@@ -104,7 +116,9 @@ export default function HomePage() {
 
       const matchesTime = inRange(result.departureTime.substring(11, 16), departureTimeStart, departureTimeEnd) && inRange(result.arrivalTime.substring(11, 16), arrivalTimeStart, arrivalTimeEnd);
 
-      return matchesType && matchesTransfers && !soldOut && matchesTime;
+      const matchesDays = allowedDepartureDays.includes(new Date(result.departureTime).getDay()) && allowedArrivalDays.includes(new Date(result.arrivalTime).getDay());
+
+      return matchesType && matchesTransfers && !soldOut && matchesTime && matchesDays;
     });
   }, [
     searchResults,
@@ -120,6 +134,8 @@ export default function HomePage() {
     departureTimeEnd,
     arrivalTimeStart,
     arrivalTimeEnd,
+    allowedDepartureDays,
+    allowedArrivalDays,
   ]);
 
   const sortedFilteredSearchResults = useMemo(() => {
@@ -747,6 +763,42 @@ export default function HomePage() {
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline">
+                    {allowedDepartureDays.length === 7 ? 'Kaikki viikonpäivät' : `${allowedDepartureDays.length} viikonpäivä${allowedDepartureDays.length !== 1 ? 'ä' : ''}`}
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="flex flex-col gap-3">
+                  <div className="flex flex-row gap-2 flex-wrap">
+                    {weekdays.map((day) => {
+                      const selected = allowedDepartureDays.includes(day.value);
+
+                      return (
+                        <Button
+                          key={day.value}
+                          type="button"
+                          size="sm"
+                          variant={selected ? 'default' : 'outline'}
+                          className={cn('transition', selected && 'bg-primary text-primary-foreground')}
+                          onClick={() => {
+                            setAllowedDepartureDays((prev) => (prev.includes(day.value) ? prev.filter((d) => d !== day.value) : [...prev, day.value].sort((a, b) => a - b)));
+                          }}
+                        >
+                          {day.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-row gap-2">
+                    <Button onClick={() => setAllowedDepartureDays([0, 1, 2, 3, 4, 5, 6])}>Valitse kaikki</Button>
+                    <Button variant="outline" onClick={() => setAllowedDepartureDays([])}>
+                      Poista valinnat
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="flex flex-row gap-2">
@@ -785,6 +837,40 @@ export default function HomePage() {
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline">{allowedArrivalDays.length === 7 ? 'Kaikki viikonpäivät' : `${allowedArrivalDays.length} viikonpäivä${allowedArrivalDays.length !== 1 ? 'ä' : ''}`}</Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="flex flex-col gap-3">
+                  <div className="flex flex-row gap-2 flex-wrap">
+                    {weekdays.map((day) => {
+                      const selected = allowedArrivalDays.includes(day.value);
+
+                      return (
+                        <Button
+                          key={day.value}
+                          type="button"
+                          size="sm"
+                          variant={selected ? 'default' : 'outline'}
+                          className={cn('transition', selected && 'bg-primary text-primary-foreground')}
+                          onClick={() => {
+                            setAllowedArrivalDays((prev) => (prev.includes(day.value) ? prev.filter((d) => d !== day.value) : [...prev, day.value].sort((a, b) => a - b)));
+                          }}
+                        >
+                          {day.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-row gap-2">
+                    <Button onClick={() => setAllowedArrivalDays([0, 1, 2, 3, 4, 5, 6])}>Valitse kaikki</Button>
+                    <Button variant="outline" onClick={() => setAllowedArrivalDays([])}>
+                      Poista valinnat
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
