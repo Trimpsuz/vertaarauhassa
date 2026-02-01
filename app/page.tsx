@@ -172,11 +172,21 @@ export default function HomePage() {
   };
 
   const handleOriginSelect = (stationKey: string) => {
+    if (stationKey === destination) {
+      if (origin) setDestination(origin);
+      else setDestination('');
+    }
+
     setOrigin(stationKey === origin ? '' : stationKey);
     setOriginOpen(false);
   };
 
   const handleDestinationSelect = (stationKey: string) => {
+    if (stationKey === origin) {
+      if (origin) setOrigin(destination);
+      else setOrigin('');
+    }
+
     setDestination(stationKey === destination ? '' : stationKey);
     setDestinationOpen(false);
   };
@@ -272,14 +282,12 @@ export default function HomePage() {
                           <CommandList>
                             <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
                             <CommandGroup>
-                              {stations
-                                .filter((station) => station.key !== destination)
-                                .map((station) => (
-                                  <CommandItem key={station.key} value={station.value} onSelect={() => handleOriginSelect(station.key)}>
-                                    <Check className={cn('mr-2 h-4 w-4', origin === station.key ? 'opacity-100' : 'opacity-0')} />
-                                    {station.value}
-                                  </CommandItem>
-                                ))}
+                              {stations.map((station) => (
+                                <CommandItem key={station.key} value={station.value} onSelect={() => handleOriginSelect(station.key)}>
+                                  <Check className={cn('mr-2 h-4 w-4', origin === station.key ? 'opacity-100' : 'opacity-0')} />
+                                  {station.value}
+                                </CommandItem>
+                              ))}
                             </CommandGroup>
                           </CommandList>
                         </Command>
@@ -305,14 +313,12 @@ export default function HomePage() {
                           <CommandList>
                             <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
                             <CommandGroup>
-                              {stations
-                                .filter((station) => station.key !== origin)
-                                .map((station) => (
-                                  <CommandItem key={station.key} value={station.value} onSelect={() => handleDestinationSelect(station.key)}>
-                                    <Check className={cn('mr-2 h-4 w-4', destination === station.key ? 'opacity-100' : 'opacity-0')} />
-                                    {station.value}
-                                  </CommandItem>
-                                ))}
+                              {stations.map((station) => (
+                                <CommandItem key={station.key} value={station.value} onSelect={() => handleDestinationSelect(station.key)}>
+                                  <Check className={cn('mr-2 h-4 w-4', destination === station.key ? 'opacity-100' : 'opacity-0')} />
+                                  {station.value}
+                                </CommandItem>
+                              ))}
                             </CommandGroup>
                           </CommandList>
                         </Command>
