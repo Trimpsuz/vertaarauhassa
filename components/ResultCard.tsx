@@ -45,17 +45,18 @@ const ResultCardComponent = ({
     setOpen(false);
   };
 
-  const formatDate = (date: Date) => date
-    .toLocaleTimeString('fi-FI', {
-      hour: '2-digit',
-      minute: '2-digit',
-      day: 'numeric',
-      month: 'numeric',
-      weekday: 'short'
-    })
-    .split(' ')
-    .filter((str) => str !== 'klo')
-    .join(' ')
+  const formatDate = (date: Date) =>
+    date
+      .toLocaleTimeString('fi-FI', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: 'numeric',
+        month: 'numeric',
+        weekday: 'short',
+      })
+      .split(' ')
+      .filter((str) => str !== 'klo')
+      .join(' ');
 
   return (
     <>
@@ -92,7 +93,7 @@ const ResultCardComponent = ({
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   .map((leg: any, index: number) => (
                     <div key={index} className="flex flex-row gap-1">
-                      {['S', 'PYO', 'IC'].includes(leg.trainType) ? (
+                      {['S', 'SP', 'PYO', 'IC'].includes(leg.trainType) ? (
                         <a
                           href={`https://venaarauhassa.fi/train/${leg.departureTime.split('T')[0]}/${leg.trainNumber}`}
                           target="_blank"
