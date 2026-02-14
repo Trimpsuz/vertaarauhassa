@@ -727,14 +727,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex flex-row gap-2">
-              <div className="flex items-center gap-1">
+            <div className="flex flex-row flex-wrap gap-2 w-full items-center">
+              <div className="flex items-center gap-1 shrink-0">
                 <Clock className="h-4 w-4" />
                 <span className="font-medium" id="departure-time-label">
                   Lähtöaika
                 </span>
               </div>
-              <div className="flex flex-row gap-1 items-center" aria-labelledby="departure-time-label">
+
+              <div className="flex flex-row gap-2 items-center flex-none" aria-labelledby="departure-time-label">
                 <Input
                   type="time"
                   id="time-picker"
@@ -743,7 +744,9 @@ export default function HomePage() {
                   onChange={(e) => setDepartureTimeStart(e.target.value)}
                   className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
                 />
-                <span>–</span>
+
+                <span className="shrink-0">–</span>
+
                 <Input
                   type="time"
                   id="time-picker"
@@ -752,17 +755,20 @@ export default function HomePage() {
                   onChange={(e) => setDepartureTimeEnd(e.target.value)}
                   className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
                 />
+
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="flex-none"
+                  onClick={() => {
+                    setDepartureTimeStart('00:00');
+                    setDepartureTimeEnd('23:59');
+                  }}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => {
-                  setDepartureTimeStart('00:00');
-                  setDepartureTimeEnd('23:59');
-                }}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline">
@@ -801,14 +807,15 @@ export default function HomePage() {
               </Popover>
             </div>
 
-            <div className="flex flex-row gap-2">
-              <div className="flex items-center gap-1">
+            <div className="flex flex-row flex-wrap gap-2 w-full items-center">
+              <div className="flex items-center gap-1 shrink-0">
                 <Clock className="h-4 w-4" />
                 <span className="font-medium" id="arrival-time-label">
                   Saapumisaika
                 </span>
               </div>
-              <div className="flex flex-row gap-1 items-center" aria-labelledby="arrival-time-label">
+
+              <div className="flex flex-row gap-2 items-center flex-none" aria-labelledby="arrival-time-label">
                 <Input
                   type="time"
                   id="time-picker"
@@ -817,7 +824,9 @@ export default function HomePage() {
                   onChange={(e) => setArrivalTimeStart(e.target.value)}
                   className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
                 />
-                <span>–</span>
+
+                <span className="shrink-0">–</span>
+
                 <Input
                   type="time"
                   id="time-picker"
@@ -826,17 +835,20 @@ export default function HomePage() {
                   onChange={(e) => setArrivalTimeEnd(e.target.value)}
                   className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
                 />
+
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="flex-none"
+                  onClick={() => {
+                    setArrivalTimeStart('00:00');
+                    setArrivalTimeEnd('23:59');
+                  }}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => {
-                  setArrivalTimeStart('00:00');
-                  setArrivalTimeEnd('23:59');
-                }}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline">{allowedArrivalDays.length === 7 ? 'Kaikki viikonpäivät' : `${allowedArrivalDays.length} viikonpäivä${allowedArrivalDays.length !== 1 ? 'ä' : ''}`}</Button>
