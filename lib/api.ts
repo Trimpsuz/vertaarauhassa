@@ -53,7 +53,7 @@ export const searchJourney = async (
         extensions: {
           persistedQuery: {
             version: 1,
-            sha256Hash: '0e21bfbc72aed963b87dbdfa056bf3bbe1c714d98ba1cf3c79cdc04a4da3ef25',
+            sha256Hash: 'c3939f9096fa228e48c98fc753ebbe579a388939d3ae28bb5c068336334627b1',
           },
         },
       }),
