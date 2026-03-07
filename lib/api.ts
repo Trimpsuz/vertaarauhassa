@@ -87,7 +87,7 @@ export const createSale = async (id: string) => {
       extensions: {
         persistedQuery: {
           version: 1,
-          sha256Hash: '6e1c642bbcb01eb95d100b5853caed41a4d120a93a8ddc4ff754f4d4179d6155',
+          sha256Hash: '21e76409b995f0ba38cfaeec5ceeed506d3766f6784f97a40f7523e82e684f92',
         },
       },
     });
