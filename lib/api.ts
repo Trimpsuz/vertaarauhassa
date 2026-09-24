@@ -6,7 +6,18 @@ import { getDatesInRange, parse, type JourneyOption } from './utils';
 const TRPC_ENDPOINT = '/api/trpc';
 const REQUEST_TIMEOUT_MS = 30_000;
 
+let stationRequest: Promise<Station[]> | undefined;
+
 type PassengerType = 'ADULT' | 'CHILD' | 'PENSIONER' | 'STUDENT' | 'CONSCRIPT' | 'FDFCONTRACT';
+
+export interface Station {
+  code: string;
+  name: string;
+}
+
+interface StationListResult {
+  stations: Record<string, { abbreviation: string; name: string }>;
+}
 
 interface JourneyPassenger {
   key: string;
@@ -86,6 +97,28 @@ const getTrpcData = <T>(response: TrpcResponse<T>) => {
   return item.result.data;
 };
 
+export const fetchStations = () => {
+  stationRequest ??= (async () => {
+    const response = await axios.get<TrpcResponse<StationListResult>>(`${TRPC_ENDPOINT}/station.getStations`, {
+      params: {
+        input: JSON.stringify({ locale: 'fi' }),
+      },
+      timeout: REQUEST_TIMEOUT_MS,
+    });
+    const result = getTrpcData(response.data);
+    const stations = Object.values(result.stations)
+      .map((station) => ({ code: station.abbreviation, name: station.name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fi'));
+
+    if (stations.length === 0) throw new Error('VR API returned no stations');
+    return stations;
+  })().finally(() => {
+    stationRequest = undefined;
+  });
+
+  return stationRequest;
+};
+
 const addPassengers = (passengers: JourneyPassenger[], type: PassengerType, count: number) => {
   for (let i = 0; i < count; i++) {
     passengers.push({ key: uuidv4(), type, wheelchair: false, vehicles: [] });
@@ -103,6 +136,7 @@ export const searchJourney = async (
   students: number,
   conscripts: number,
   fdfContract: number,
+  stationMap: ReadonlyMap<string, string>,
 ) => {
   const dates = getDatesInRange(startDate, endDate);
   const passengers: JourneyPassenger[] = [];
@@ -150,7 +184,7 @@ export const searchJourney = async (
       if (searchResult.status === 'error') {
         throw new Error(getErrorMessage(searchResult.error) || 'Journey search failed');
       }
-      results.push(...parse(searchResult.options));
+      results.push(...parse(searchResult.options, stationMap));
     } catch (error) {
       firstError ??= error;
     }

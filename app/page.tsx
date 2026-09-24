@@ -12,12 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { createSalesSession, searchJourney } from '@/lib/api';
-import { stationMap } from '@/lib/constants';
+import { createSalesSession, fetchStations, searchJourney, type Station } from '@/lib/api';
 import { cn, inRange } from '@/lib/utils';
 import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Clock, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, RotateCcw, Shuffle, TrainFront, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const poppins = Poppins({
@@ -25,12 +24,60 @@ const poppins = Poppins({
   weight: ['800'],
 });
 
+const STATIONS_CACHE_KEY = 'vr-stations-fi-v1';
+const STATIONS_CACHE_TTL_MS = 10 * 60 * 1000;
+
+interface StationsCache {
+  cachedAt: number;
+  stations: Station[];
+}
+
+const isStation = (value: unknown): value is Station => {
+  if (typeof value !== 'object' || value === null) return false;
+  const station = value as Record<string, unknown>;
+  return typeof station.code === 'string' && typeof station.name === 'string';
+};
+
+const readStationsCache = (): StationsCache | null => {
+  try {
+    const rawCache = localStorage.getItem(STATIONS_CACHE_KEY);
+    if (!rawCache) return null;
+
+    const cache = JSON.parse(rawCache) as unknown;
+    if (
+      typeof cache !== 'object' ||
+      cache === null ||
+      !('cachedAt' in cache) ||
+      typeof cache.cachedAt !== 'number' ||
+      !('stations' in cache) ||
+      !Array.isArray(cache.stations) ||
+      cache.stations.length === 0 ||
+      !cache.stations.every(isStation)
+    ) {
+      return null;
+    }
+
+    return { cachedAt: cache.cachedAt, stations: cache.stations };
+  } catch {
+    return null;
+  }
+};
+
+const writeStationsCache = (stations: Station[]) => {
+  try {
+    localStorage.setItem(STATIONS_CACHE_KEY, JSON.stringify({ cachedAt: Date.now(), stations } satisfies StationsCache));
+  } catch { }
+};
+
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [originOpen, setOriginOpen] = useState(false);
   const [destinationOpen, setDestinationOpen] = useState(false);
   const [origin, setOrigin] = useState<string>('');
   const [destination, setDestination] = useState<string>('');
+  const [stations, setStations] = useState<Station[]>([]);
+  const [stationsLoading, setStationsLoading] = useState(true);
+  const [stationsLoadFailed, setStationsLoadFailed] = useState(false);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [adults, setAdults] = useState(1);
@@ -78,6 +125,42 @@ export default function HomePage() {
   useEffect(() => {
     localStorage.setItem('showAlertModal', JSON.stringify(showAlertModal));
   }, [showAlertModal]);
+
+  const loadStations = useCallback(async () => {
+    const cached = readStationsCache();
+    if (cached) {
+      setStations(cached.stations);
+      const cacheAge = Date.now() - cached.cachedAt;
+      if (cacheAge >= 0 && cacheAge < STATIONS_CACHE_TTL_MS) {
+        setStationsLoading(false);
+        setStationsLoadFailed(false);
+        return;
+      }
+    }
+
+    setStationsLoading(true);
+    setStationsLoadFailed(false);
+
+    try {
+      const fetchedStations = await fetchStations();
+      setStations(fetchedStations);
+      writeStationsCache(fetchedStations);
+    } catch {
+      if (cached) {
+        toast.warning('Asemien päivitys epäonnistui. Käytetään välimuistia.');
+      } else {
+        setStations([]);
+        setStationsLoadFailed(true);
+        toast.error('Asemien lataaminen epäonnistui.');
+      }
+    } finally {
+      setStationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadStations();
+  }, [loadStations]);
 
   const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers', 'fill'];
   const sortOptionNames = new Map<string, string>([
@@ -166,10 +249,9 @@ export default function HomePage() {
 
   const createdSales = useRef(new Map<string, string>());
 
-  const stations = Array.from(stationMap.entries()).map(([key, value]) => ({
-    key,
-    value,
-  }));
+  const stationMap = useMemo(() => new Map<string, string>(stations.map((station) => [station.code, station.name])), [stations]);
+  const getStationName = (stationCode: string) => stationMap.get(stationCode) ?? stationCode;
+  const stationControlsDisabled = stationsLoadFailed || (stationsLoading && stations.length === 0);
 
   const openSale = async (id: string) => {
     let saleId = createdSales.current.get(id);
@@ -214,7 +296,7 @@ export default function HomePage() {
       setCurrentStep(3);
     } else if (currentStep === 3 && 19 > adults + children + seniors + students + conscripts + fdfContract && adults + children + seniors + students + conscripts + fdfContract > 0) {
       setLoading(true);
-      const results = await searchJourney(origin, destination, startDate, endDate, adults, children, seniors, students, conscripts, fdfContract);
+      const results = await searchJourney(origin, destination, startDate, endDate, adults, children, seniors, students, conscripts, fdfContract, stationMap);
       setLoading(false);
       if (results.length === 0) {
         toast.error('Matkoja ei löytynyt', {
@@ -255,7 +337,7 @@ export default function HomePage() {
     if (type === 'fdfContract') setFdfContract((prev) => Math.max(prev - 1, 0));
   };
 
-  const isStep1Valid = origin && destination && origin !== destination;
+  const isStep1Valid = stations.length > 0 && origin && destination && origin !== destination;
   const isStep2Valid = startDate && endDate;
   const isStep3Valid = 19 > adults + children + seniors + students + conscripts + fdfContract && adults + children + seniors + students + conscripts + fdfContract > 0;
 
@@ -287,9 +369,18 @@ export default function HomePage() {
                     </label>
                     <Popover open={originOpen} onOpenChange={setOriginOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-labelledby="origin-label" aria-expanded={originOpen} className="w-full justify-between bg-transparent">
-                          {origin ? stationMap.get(origin) : 'Valitse lähtöasema...'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        <Button variant="outline" role="combobox" aria-labelledby="origin-label" aria-expanded={originOpen} disabled={stationControlsDisabled} className="w-full justify-between bg-transparent">
+                          {stationsLoading && stations.length === 0 ? (
+                            <div className='flex gap-1 items-center'>
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                              Ladataan asemia...
+                            </div>
+                          ) : (
+                            <>
+                              {origin ? getStationName(origin) : 'Valitse lähtöasema...'}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </>
+                          )}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full sm:min-w-[300px] p-0">
@@ -299,9 +390,9 @@ export default function HomePage() {
                             <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
                             <CommandGroup>
                               {stations.map((station) => (
-                                <CommandItem key={station.key} value={station.value} onSelect={() => handleOriginSelect(station.key)}>
-                                  <Check className={cn('mr-2 h-4 w-4', origin === station.key ? 'opacity-100' : 'opacity-0')} />
-                                  {station.value}
+                                <CommandItem key={station.code} value={station.name} onSelect={() => handleOriginSelect(station.code)}>
+                                  <Check className={cn('mr-2 h-4 w-4', origin === station.code ? 'opacity-100' : 'opacity-0')} />
+                                  {station.name}
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -318,9 +409,18 @@ export default function HomePage() {
                     </label>
                     <Popover open={destinationOpen} onOpenChange={setDestinationOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-labelledby="destination-label" aria-expanded={destinationOpen} className="w-full justify-between bg-transparent">
-                          {destination ? stationMap.get(destination) : 'Valitse kohdeasema...'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        <Button variant="outline" role="combobox" aria-labelledby="destination-label" aria-expanded={destinationOpen} disabled={stationControlsDisabled} className="w-full justify-between bg-transparent">
+                          {stationsLoading && stations.length === 0 ? (
+                            <div className='flex gap-1 items-center'>
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                              Ladataan asemia...
+                            </div>
+                          ) : (
+                            <>
+                              {destination ? getStationName(destination) : 'Valitse kohdeasema...'}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </>
+                          )}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full sm:min-w-[300px] p-0">
@@ -330,9 +430,9 @@ export default function HomePage() {
                             <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
                             <CommandGroup>
                               {stations.map((station) => (
-                                <CommandItem key={station.key} value={station.value} onSelect={() => handleDestinationSelect(station.key)}>
-                                  <Check className={cn('mr-2 h-4 w-4', destination === station.key ? 'opacity-100' : 'opacity-0')} />
-                                  {station.value}
+                                <CommandItem key={station.code} value={station.name} onSelect={() => handleDestinationSelect(station.code)}>
+                                  <Check className={cn('mr-2 h-4 w-4', destination === station.code ? 'opacity-100' : 'opacity-0')} />
+                                  {station.name}
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -422,10 +522,10 @@ export default function HomePage() {
                     <h4 className="font-medium text-sm">Yhteenveto</h4>
                     <div className="text-sm text-muted-foreground space-y-1">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3" /> Mistä: {stationMap.get(origin)}
+                        <MapPin className="h-3 w-3" /> Mistä: {getStationName(origin)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Navigation className="h-3 w-3" /> Minne: {stationMap.get(destination)}
+                        <Navigation className="h-3 w-3" /> Minne: {getStationName(destination)}
                       </div>
                     </div>
                   </div>
@@ -609,10 +709,10 @@ export default function HomePage() {
                     <h4 className="font-medium text-sm">Yhteenveto</h4>
                     <div className="text-sm text-muted-foreground space-y-1">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3" /> Mistä: {stationMap.get(origin)}
+                        <MapPin className="h-3 w-3" /> Mistä: {getStationName(origin)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Navigation className="h-3 w-3" /> Minne: {stationMap.get(destination)}
+                        <Navigation className="h-3 w-3" /> Minne: {getStationName(destination)}
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-3 w-3" /> Milloin: {startDate} – {endDate}

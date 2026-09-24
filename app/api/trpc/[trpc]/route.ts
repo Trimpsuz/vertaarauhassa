@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 const VR_TRPC_BASE_URL = process.env.VR_API_BASE_URL ?? 'https://www.vr.fi/api/trpc';
-const ALLOWED_PROCEDURES = new Set(['journey.searchJourney', 'sales.createNewSalesSession']);
+const ALLOWED_PROCEDURES = new Set(['journey.searchJourney', 'sales.createNewSalesSession', 'station.getStations']);
 const VR_SESSION_COOKIE = 'sessionId';
 const VR_AUTH_COOKIE_NAMES = [
   'loggedIn',

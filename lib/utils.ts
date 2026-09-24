@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { trainTypeMap, stationMap } from './constants';
+import { trainTypeMap } from './constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,7 +30,9 @@ export interface JourneyOption {
   highestLegTrainFill?: number | null;
 }
 
-export function parse(journeys: JourneyOption[]) {
+export function parse(journeys: JourneyOption[], stationMap: ReadonlyMap<string, string>) {
+  const getStationName = (station: string) => stationMap.get(station) ?? station;
+
   return journeys.map((item) => ({
     id: item.id,
     totalPriceCents: item.totalPrice,
@@ -40,13 +42,13 @@ export function parse(journeys: JourneyOption[]) {
     legs: item.legs.map((leg) => ({
       ...leg,
       trainTypeName: trainTypeMap.get(leg.trainType),
-      arrivalStationName: stationMap.get(leg.arrivalStation),
-      departureStationName: stationMap.get(leg.departureStation),
+      arrivalStationName: getStationName(leg.arrivalStation),
+      departureStationName: getStationName(leg.departureStation),
     })),
     departureStation: item.departureStation,
     arrivalStation: item.arrivalStation,
-    departureStationName: stationMap.get(item.departureStation),
-    arrivalStationName: stationMap.get(item.arrivalStation),
+    departureStationName: getStationName(item.departureStation),
+    arrivalStationName: getStationName(item.arrivalStation),
     error: item.error,
     highestLegTrainFill: item.highestLegTrainFill,
   }));
