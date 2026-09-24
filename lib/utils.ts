@@ -6,35 +6,50 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parse(data: any) {
-  const searchJourney = data.data.searchJourney;
-  const result = [];
+export interface JourneyLeg {
+  id: string;
+  trainType: string;
+  departureStation: string;
+  arrivalStation: string;
+  departureTime: string;
+  arrivalTime: string;
+  trainNumber: string;
+  commercialLineIdentifier: string;
+  [key: string]: unknown;
+}
 
-  for (const item of searchJourney) {
-    result.push({
-      id: item.id,
-      totalPriceCents: item.totalPrice,
-      departureTime: item.departureTime,
-      arrivalTime: item.arrivalTime,
-      transfers: item.legs.length - 1,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      legs: item.legs.map((leg: any) => ({
-        ...leg,
-        trainTypeName: trainTypeMap.get(leg.trainType),
-        arrivalStationName: stationMap.get(leg.arrivalStation),
-        departureStationName: stationMap.get(leg.departureStation),
-      })),
-      departureStation: item.departureStation,
-      arrivalStation: item.arrivalStation,
-      departureStationName: stationMap.get(item.departureStation),
-      arrivalStationName: stationMap.get(item.arrivalStation),
-      error: item.error,
-      highestLegTrainFill: item.highestLegTrainFill,
-    });
-  }
+export interface JourneyOption {
+  id: string;
+  totalPrice: number;
+  departureTime: string;
+  arrivalTime: string;
+  departureStation: string;
+  arrivalStation: string;
+  legs: JourneyLeg[];
+  error?: string;
+  highestLegTrainFill?: number | null;
+}
 
-  return result;
+export function parse(journeys: JourneyOption[]) {
+  return journeys.map((item) => ({
+    id: item.id,
+    totalPriceCents: item.totalPrice,
+    departureTime: item.departureTime,
+    arrivalTime: item.arrivalTime,
+    transfers: item.legs.length - 1,
+    legs: item.legs.map((leg) => ({
+      ...leg,
+      trainTypeName: trainTypeMap.get(leg.trainType),
+      arrivalStationName: stationMap.get(leg.arrivalStation),
+      departureStationName: stationMap.get(leg.departureStation),
+    })),
+    departureStation: item.departureStation,
+    arrivalStation: item.arrivalStation,
+    departureStationName: stationMap.get(item.departureStation),
+    arrivalStationName: stationMap.get(item.arrivalStation),
+    error: item.error,
+    highestLegTrainFill: item.highestLegTrainFill,
+  }));
 }
 
 export function getDatesInRange(startDateStr: string, endDateStr: string) {

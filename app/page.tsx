@@ -12,12 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { createSale, searchJourney } from '@/lib/api';
+import { createSalesSession, searchJourney } from '@/lib/api';
 import { stationMap } from '@/lib/constants';
 import { cn, inRange } from '@/lib/utils';
 import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Clock, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, RotateCcw, Shuffle, TrainFront, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const poppins = Poppins({
@@ -164,7 +164,7 @@ export default function HomePage() {
     });
   }, [filteredSearchResults, sort, reverse]);
 
-  const createdSales = new Map<string, string>();
+  const createdSales = useRef(new Map<string, string>());
 
   const stations = Array.from(stationMap.entries()).map(([key, value]) => ({
     key,
@@ -172,17 +172,17 @@ export default function HomePage() {
   }));
 
   const openSale = async (id: string) => {
-    let saleId = createdSales.get(id);
+    let saleId = createdSales.current.get(id);
     if (saleId) {
       window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
       return;
     }
 
-    const res = await createSale(id);
-    if (!res) return;
+    const newSaleId = await createSalesSession(id);
+    if (!newSaleId) return;
 
-    saleId = res.data.createNewSale.id;
-    createdSales.set(id, saleId!);
+    saleId = newSaleId;
+    createdSales.current.set(id, saleId);
 
     window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
   };
@@ -233,7 +233,7 @@ export default function HomePage() {
     }
     if (currentStep === 4) {
       setSearchResults([]);
-      createdSales.clear();
+      createdSales.current.clear();
     }
   };
 
