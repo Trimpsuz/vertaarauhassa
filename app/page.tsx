@@ -13,8 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { createSalesSession, fetchStations, searchJourney, type Station } from '@/lib/api';
-import { cn, inRange } from '@/lib/utils';
-import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Clock, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, RotateCcw, Shuffle, TrainFront, Users } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { cn, formatTime, inRange } from '@/lib/utils';
+import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Clock, Hourglass, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, RotateCcw, Shuffle, TrainFront, Users } from 'lucide-react';
 import { Poppins } from 'next/font/google';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -69,6 +70,11 @@ const writeStationsCache = (stations: Station[]) => {
   } catch { }
 };
 
+const DURATION_STEP = 5;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getDurationMinutes = (result: any) => (new Date(result.arrivalTime).getTime() - new Date(result.departureTime).getTime()) / 60000;
+
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [originOpen, setOriginOpen] = useState(false);
@@ -106,6 +112,8 @@ export default function HomePage() {
   const [arrivalTimeEnd, setArrivalTimeEnd] = useState('23:59');
   const [allowedDepartureDays, setAllowedDepartureDays] = useState([0, 1, 2, 3, 4, 5, 6]);
   const [allowedArrivalDays, setAllowedArrivalDays] = useState([0, 1, 2, 3, 4, 5, 6]);
+  // null means the full range of the current results
+  const [durationRange, setDurationRange] = useState<number[] | null>(null);
 
   const weekdays = [
     { label: 'Su', value: 0 },
@@ -172,6 +180,14 @@ export default function HomePage() {
     ['fill', 'Täyttöaste'],
   ]);
 
+  const durationBounds = useMemo(() => {
+    if (searchResults.length === 0) return [0, 0];
+    const durations: number[] = searchResults.map(getDurationMinutes);
+    return [Math.floor(Math.min(...durations) / DURATION_STEP) * DURATION_STEP, Math.ceil(Math.max(...durations) / DURATION_STEP) * DURATION_STEP];
+  }, [searchResults]);
+
+  const durationValue = durationRange ?? durationBounds;
+
   const filteredSearchResults = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return searchResults.filter((result: any) => {
@@ -201,7 +217,10 @@ export default function HomePage() {
 
       const matchesDays = allowedDepartureDays.includes(new Date(result.departureTime).getDay()) && allowedArrivalDays.includes(new Date(result.arrivalTime).getDay());
 
-      return matchesType && matchesTransfers && !soldOut && matchesTime && matchesDays;
+      const duration = getDurationMinutes(result);
+      const matchesDuration = !durationRange || (duration >= durationRange[0] && duration <= durationRange[1]);
+
+      return matchesType && matchesTransfers && !soldOut && matchesTime && matchesDays && matchesDuration;
     });
   }, [
     searchResults,
@@ -219,6 +238,7 @@ export default function HomePage() {
     arrivalTimeEnd,
     allowedDepartureDays,
     allowedArrivalDays,
+    durationRange,
   ]);
 
   const sortedFilteredSearchResults = useMemo(() => {
@@ -305,6 +325,7 @@ export default function HomePage() {
         return;
       }
       setSearchResults(results);
+      setDurationRange(null);
       setCurrentStep(4);
     }
   };
@@ -983,6 +1004,37 @@ export default function HomePage() {
                   </div>
                 </PopoverContent>
               </Popover>
+            </div>
+
+            <div className="flex flex-row flex-wrap gap-2 w-full items-center">
+              <div className="flex items-center gap-1 shrink-0">
+                <Hourglass className="h-4 w-4" />
+                <span className="font-medium" id="duration-label">
+                  Kesto
+                </span>
+              </div>
+
+              <div className="flex flex-row gap-3 items-center flex-1 min-w-64" aria-labelledby="duration-label">
+                <Slider
+                  min={durationBounds[0]}
+                  max={durationBounds[1]}
+                  step={DURATION_STEP}
+                  minStepsBetweenThumbs={0}
+                  value={durationValue}
+                  onValueChange={(value) => setDurationRange(value[0] === durationBounds[0] && value[1] === durationBounds[1] ? null : value)}
+                  disabled={durationBounds[0] === durationBounds[1]}
+                  aria-label="Matkan kesto"
+                  className="max-w-64 cursor-pointer"
+                />
+
+                <span className="shrink-0 tabular-nums text-sm min-w-32">
+                  {formatTime(durationValue[0] * 60000)} – {formatTime(durationValue[1] * 60000)}
+                </span>
+
+                <Button size="icon" variant="outline" className="flex-none" onClick={() => setDurationRange(null)}>
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
