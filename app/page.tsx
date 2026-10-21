@@ -2,6 +2,7 @@
 
 import FloatingControls from '@/components/FloatingControls';
 import ResultCard from '@/components/ResultCard';
+import TimePicker from '@/components/TimePicker';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -836,25 +837,11 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-row gap-2 items-center flex-none" aria-labelledby="departure-time-label">
-                <Input
-                  type="time"
-                  id="time-picker"
-                  step="0"
-                  value={departureTimeStart}
-                  onChange={(e) => setDepartureTimeStart(e.target.value)}
-                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
-                />
+                <TimePicker value={departureTimeStart} onChange={setDepartureTimeStart} aria-label="Lähtöaika alkaen" />
 
                 <span className="shrink-0">–</span>
 
-                <Input
-                  type="time"
-                  id="time-picker"
-                  step="0"
-                  value={departureTimeEnd}
-                  onChange={(e) => setDepartureTimeEnd(e.target.value)}
-                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
-                />
+                <TimePicker value={departureTimeEnd} onChange={setDepartureTimeEnd} aria-label="Lähtöaika asti" />
 
                 <Button
                   size="icon"
@@ -916,25 +903,11 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-row gap-2 items-center flex-none" aria-labelledby="arrival-time-label">
-                <Input
-                  type="time"
-                  id="time-picker"
-                  step="0"
-                  value={arrivalTimeStart}
-                  onChange={(e) => setArrivalTimeStart(e.target.value)}
-                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
-                />
+                <TimePicker value={arrivalTimeStart} onChange={setArrivalTimeStart} aria-label="Saapumisaika alkaen" />
 
                 <span className="shrink-0">–</span>
 
-                <Input
-                  type="time"
-                  id="time-picker"
-                  step="0"
-                  value={arrivalTimeEnd}
-                  onChange={(e) => setArrivalTimeEnd(e.target.value)}
-                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none w-auto cursor-text"
-                />
+                <TimePicker value={arrivalTimeEnd} onChange={setArrivalTimeEnd} aria-label="Saapumisaika asti" />
 
                 <Button
                   size="icon"
