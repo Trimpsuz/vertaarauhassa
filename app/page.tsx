@@ -16,9 +16,28 @@ import { Switch } from '@/components/ui/switch';
 import { createSalesSession, fetchStations, searchJourney, type Station } from '@/lib/api';
 import { Slider } from '@/components/ui/slider';
 import { cn, formatTime, inRange } from '@/lib/utils';
-import { ArrowLeft, ArrowUpDown, Calendar, Check, ChevronDown, ChevronsUpDown, Clock, Hourglass, Info, Loader2Icon, MapPin, Minus, Navigation, Plus, RotateCcw, Shuffle, TrainFront, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUpDown,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronsUpDown,
+  Clock,
+  Hourglass,
+  Info,
+  Loader2Icon,
+  MapPin,
+  Minus,
+  Navigation,
+  Plus,
+  RotateCcw,
+  Shuffle,
+  TrainFront,
+  Users,
+} from 'lucide-react';
 import { Poppins } from 'next/font/google';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const poppins = Poppins({
@@ -68,7 +87,7 @@ const readStationsCache = (): StationsCache | null => {
 const writeStationsCache = (stations: Station[]) => {
   try {
     localStorage.setItem(STATIONS_CACHE_KEY, JSON.stringify({ cachedAt: Date.now(), stations } satisfies StationsCache));
-  } catch { }
+  } catch {}
 };
 
 const DURATION_STEP = 5;
@@ -186,7 +205,7 @@ export default function HomePage() {
     const durations: number[] = searchResults.map(getDurationMinutes);
     return [Math.floor(Math.min(...durations) / DURATION_STEP) * DURATION_STEP, Math.ceil(Math.max(...durations) / DURATION_STEP) * DURATION_STEP];
   }, [searchResults]);
-  
+
   const widestLabel = useMemo(() => {
     const [min, max] = durationBounds;
     let widest = formatTime(max * 60000);
@@ -198,6 +217,7 @@ export default function HomePage() {
   }, [durationBounds]);
 
   const durationValue = durationRange ?? durationBounds;
+  const deferredDurationRange = useDeferredValue(durationRange);
 
   const filteredSearchResults = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -229,7 +249,7 @@ export default function HomePage() {
       const matchesDays = allowedDepartureDays.includes(new Date(result.departureTime).getDay()) && allowedArrivalDays.includes(new Date(result.arrivalTime).getDay());
 
       const duration = getDurationMinutes(result);
-      const matchesDuration = !durationRange || (duration >= durationRange[0] && duration <= durationRange[1]);
+      const matchesDuration = !deferredDurationRange || (duration >= deferredDurationRange[0] && duration <= deferredDurationRange[1]);
 
       return matchesType && matchesTransfers && !soldOut && matchesTime && matchesDays && matchesDuration;
     });
@@ -249,11 +269,11 @@ export default function HomePage() {
     arrivalTimeEnd,
     allowedDepartureDays,
     allowedArrivalDays,
-    durationRange,
+    deferredDurationRange,
   ]);
 
-  const sortedFilteredSearchResults = useMemo(() => {
-    return [...filteredSearchResults].sort((a, b) => {
+  const sortedSearchResults = useMemo(() => {
+    return [...searchResults].sort((a, b) => {
       if (sort === 'startTime') {
         return reverse ? new Date(b.departureTime).getTime() - new Date(a.departureTime).getTime() : new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
       }
@@ -276,7 +296,10 @@ export default function HomePage() {
       }
       return 0;
     });
-  }, [filteredSearchResults, sort, reverse]);
+  }, [searchResults, sort, reverse]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const visibleResultIds = useMemo(() => new Set<string>(filteredSearchResults.map((result: any) => result.id)), [filteredSearchResults]);
 
   const createdSales = useRef(new Map<string, string>());
 
@@ -284,7 +307,7 @@ export default function HomePage() {
   const getStationName = (stationCode: string) => stationMap.get(stationCode) ?? stationCode;
   const stationControlsDisabled = stationsLoadFailed || (stationsLoading && stations.length === 0);
 
-  const openSale = async (id: string) => {
+  const openSale = useCallback(async (id: string) => {
     let saleId = createdSales.current.get(id);
     if (saleId) {
       window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
@@ -298,7 +321,7 @@ export default function HomePage() {
     createdSales.current.set(id, saleId);
 
     window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
-  };
+  }, []);
 
   const handleOriginSelect = (stationKey: string) => {
     if (stationKey === destination) {
@@ -401,9 +424,16 @@ export default function HomePage() {
                     </label>
                     <Popover open={originOpen} onOpenChange={setOriginOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-labelledby="origin-label" aria-expanded={originOpen} disabled={stationControlsDisabled} className="w-full justify-between bg-transparent">
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-labelledby="origin-label"
+                          aria-expanded={originOpen}
+                          disabled={stationControlsDisabled}
+                          className="w-full justify-between bg-transparent"
+                        >
                           {stationsLoading && stations.length === 0 ? (
-                            <div className='flex gap-1 items-center'>
+                            <div className="flex gap-1 items-center">
                               <Loader2Icon className="h-4 w-4 animate-spin" />
                               Ladataan asemia...
                             </div>
@@ -441,9 +471,16 @@ export default function HomePage() {
                     </label>
                     <Popover open={destinationOpen} onOpenChange={setDestinationOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-labelledby="destination-label" aria-expanded={destinationOpen} disabled={stationControlsDisabled} className="w-full justify-between bg-transparent">
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-labelledby="destination-label"
+                          aria-expanded={destinationOpen}
+                          disabled={stationControlsDisabled}
+                          className="w-full justify-between bg-transparent"
+                        >
                           {stationsLoading && stations.length === 0 ? (
-                            <div className='flex gap-1 items-center'>
+                            <div className="flex gap-1 items-center">
                               <Loader2Icon className="h-4 w-4 animate-spin" />
                               Ladataan asemia...
                             </div>
@@ -1055,10 +1092,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex flex-col gap-2 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
-            {sortedFilteredSearchResults.length > 0 ? (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              sortedFilteredSearchResults.map((result: any) => <ResultCard key={result.id} result={result} openSale={openSale} showAlertModal={showAlertModal} setShowAlertModal={setShowAlertModal} />)
-            ) : (
+            {filteredSearchResults.length === 0 && (
               <Alert variant="default">
                 <Info />
                 <AlertTitle>Matkoja ei löytynyt</AlertTitle>
@@ -1067,6 +1101,12 @@ export default function HomePage() {
                 </AlertDescription>
               </Alert>
             )}
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {sortedSearchResults.map((result: any) => (
+              <div key={result.id} hidden={!visibleResultIds.has(result.id)}>
+                <ResultCard result={result} openSale={openSale} showAlertModal={showAlertModal} setShowAlertModal={setShowAlertModal} />
+              </div>
+            ))}
           </div>
 
           <div className="flex flex-row w-full max-w-md sm:max-w-xl justify-center">
