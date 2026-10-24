@@ -185,6 +185,16 @@ export default function HomePage() {
     const durations: number[] = searchResults.map(getDurationMinutes);
     return [Math.floor(Math.min(...durations) / DURATION_STEP) * DURATION_STEP, Math.ceil(Math.max(...durations) / DURATION_STEP) * DURATION_STEP];
   }, [searchResults]);
+  
+  const widestLabel = useMemo(() => {
+    const [min, max] = durationBounds;
+    let widest = formatTime(max * 60000);
+    for (let m = min; m <= max; m += DURATION_STEP) {
+      const s = formatTime(m * 60000);
+      if (s.length > widest.length) widest = s;
+    }
+    return `${widest} – ${widest}`;
+  }, [durationBounds]);
 
   const durationValue = durationRange ?? durationBounds;
 
@@ -1014,7 +1024,7 @@ export default function HomePage() {
                 </span>
               </div>
 
-              <div className="flex flex-row gap-3 items-center flex-1 min-w-64" aria-labelledby="duration-label">
+              <div className="flex flex-row gap-2 items-center" aria-labelledby="duration-label">
                 <Slider
                   min={durationBounds[0]}
                   max={durationBounds[1]}
@@ -1024,11 +1034,16 @@ export default function HomePage() {
                   onValueChange={(value) => setDurationRange(value[0] === durationBounds[0] && value[1] === durationBounds[1] ? null : value)}
                   disabled={durationBounds[0] === durationBounds[1]}
                   aria-label="Matkan kesto"
-                  className="max-w-64 cursor-pointer"
+                  className="w-64 cursor-pointer"
                 />
 
-                <span className="shrink-0 tabular-nums text-sm min-w-32">
-                  {formatTime(durationValue[0] * 60000)} – {formatTime(durationValue[1] * 60000)}
+                <span className="inline-grid shrink-0 tabular-nums text-sm text-center">
+                  <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
+                    {widestLabel}
+                  </span>
+                  <span className="col-start-1 row-start-1 whitespace-nowrap">
+                    {formatTime(durationValue[0] * 60000)} – {formatTime(durationValue[1] * 60000)}
+                  </span>
                 </span>
 
                 <Button size="icon" variant="outline" className="flex-none" onClick={() => setDurationRange(null)}>
