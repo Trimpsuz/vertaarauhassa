@@ -33,9 +33,23 @@ export default function TimePicker({ value, onChange, ...props }: { value: strin
   const [mode, setMode] = useState<Mode>('hour');
   const [draft, setDraft] = useState<Partial<Record<Mode, string>>>({});
   const minuteInput = useRef<HTMLInputElement>(null);
-  const { hour, minute } = parse(value);
+  const [dragValue, setDragValue] = useState<{ hour: number; minute: number } | null>(null);
+  const dragRef = useRef<{ hour: number; minute: number } | null>(null);
+  const { hour, minute } = dragValue ?? parse(value);
 
   const set = (h: number, m: number) => onChange(`${pad(h)}:${pad(m)}`);
+
+  const setDrag = (h: number, m: number) => {
+    dragRef.current = { hour: h, minute: m };
+    setDragValue({ hour: h, minute: m });
+  };
+
+  const endDrag = (commitValue: boolean) => {
+    const final = dragRef.current;
+    dragRef.current = null;
+    setDragValue(null);
+    if (commitValue && final) set(final.hour, final.minute);
+  };
 
   const pick = (e: PointerEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -46,9 +60,9 @@ export default function TimePicker({ value, onChange, ...props }: { value: strin
     if (mode === 'hour') {
       const step = Math.round((angle / (2 * Math.PI)) * 12) % 12;
       const inner = Math.hypot(dx, dy) < RING_SPLIT;
-      set(inner ? (step === 0 ? 0 : step + 12) : step === 0 ? 12 : step, minute);
+      setDrag(inner ? (step === 0 ? 0 : step + 12) : step === 0 ? 12 : step, minute);
     } else {
-      set(hour, Math.round((angle / (2 * Math.PI)) * 60) % 60);
+      setDrag(hour, Math.round((angle / (2 * Math.PI)) * 60) % 60);
     }
   };
 
@@ -149,7 +163,7 @@ export default function TimePicker({ value, onChange, ...props }: { value: strin
                 }}
                 className={cn(
                   'w-[2.5ch] box-content rounded-md px-2 py-1 text-center cursor-text transition outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                  mode === m ? 'bg-primary text-primary-foreground' : 'bg-transparent hover:bg-accent'
+                  mode === m ? 'bg-primary text-primary-foreground' : 'bg-transparent hover:bg-accent',
                 )}
               />
             </span>
@@ -176,7 +190,9 @@ export default function TimePicker({ value, onChange, ...props }: { value: strin
           onPointerMove={(e) => {
             if (e.buttons) pick(e);
           }}
+          onPointerCancel={() => endDrag(false)}
           onPointerUp={() => {
+            endDrag(true);
             if (mode === 'hour') setMode('minute');
             else setOpen(false);
           }}
