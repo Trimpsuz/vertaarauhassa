@@ -203,18 +203,24 @@ export default function HomePage() {
   const durationBounds = useMemo(() => {
     if (searchResults.length === 0) return [0, 0];
     const durations: number[] = searchResults.map(getDurationMinutes);
-    return [Math.floor(Math.min(...durations) / DURATION_STEP) * DURATION_STEP, Math.ceil(Math.max(...durations) / DURATION_STEP) * DURATION_STEP];
+    return [Math.min(...durations), Math.max(...durations)];
   }, [searchResults]);
+
+  const sliderBounds = useMemo(() => [Math.floor(durationBounds[0] / DURATION_STEP) * DURATION_STEP, Math.ceil(durationBounds[1] / DURATION_STEP) * DURATION_STEP], [durationBounds]);
+
+  const toSliderValue = (minutes: number) => (minutes === durationBounds[0] ? sliderBounds[0] : minutes === durationBounds[1] ? sliderBounds[1] : minutes);
+  const toDurationValue = (minutes: number) => (minutes === sliderBounds[0] ? durationBounds[0] : minutes === sliderBounds[1] ? durationBounds[1] : minutes);
 
   const widestLabel = useMemo(() => {
     const [min, max] = durationBounds;
-    let widest = formatTime(max * 60000);
-    for (let m = min; m <= max; m += DURATION_STEP) {
-      const s = formatTime(m * 60000);
+    const [sliderMin, sliderMax] = sliderBounds;
+    let widest = '';
+    for (let m = sliderMin; m <= sliderMax; m += DURATION_STEP) {
+      const s = formatTime((m === sliderMin ? min : m === sliderMax ? max : m) * 60000);
       if (s.length > widest.length) widest = s;
     }
     return `${widest} – ${widest}`;
-  }, [durationBounds]);
+  }, [sliderBounds, durationBounds]);
 
   const durationValue = durationRange ?? durationBounds;
   const deferredDurationRange = useDeferredValue(durationRange);
@@ -1036,12 +1042,15 @@ export default function HomePage() {
 
               <div className="flex flex-row gap-2 items-center" aria-labelledby="duration-label">
                 <Slider
-                  min={durationBounds[0]}
-                  max={durationBounds[1]}
+                  min={sliderBounds[0]}
+                  max={sliderBounds[1]}
                   step={DURATION_STEP}
                   minStepsBetweenThumbs={0}
-                  value={durationValue}
-                  onValueChange={(value) => setDurationRange(value[0] === durationBounds[0] && value[1] === durationBounds[1] ? null : value)}
+                  value={[toSliderValue(durationValue[0]), toSliderValue(durationValue[1])]}
+                  onValueChange={(value) => {
+                    const range = [toDurationValue(value[0]), toDurationValue(value[1])];
+                    setDurationRange(range[0] === durationBounds[0] && range[1] === durationBounds[1] ? null : range);
+                  }}
                   disabled={durationBounds[0] === durationBounds[1]}
                   aria-label="Matkan kesto"
                   className="w-64 cursor-pointer"
