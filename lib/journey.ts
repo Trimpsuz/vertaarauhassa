@@ -2,8 +2,7 @@ import { inRange, type JourneyResult } from './utils';
 
 export const DURATION_STEP = 5;
 
-export const getDurationMinutes = (result: Pick<JourneyResult, 'arrivalTime' | 'departureTime'>) =>
-  (new Date(result.arrivalTime).getTime() - new Date(result.departureTime).getTime()) / 60000;
+export const getDurationMinutes = (result: Pick<JourneyResult, 'arrivalTime' | 'departureTime'>) => (new Date(result.arrivalTime).getTime() - new Date(result.departureTime).getTime()) / 60000;
 
 export interface TimeRange {
   start: string;
@@ -73,8 +72,7 @@ export const filterJourneys = (results: JourneyResult[], criteria: JourneyFilter
     const matchesType = trainTypeOptions.every(({ key, types }) => criteria.trainTypes[key] || !legs.some((leg) => types.includes(leg.trainType)));
 
     const { changeCount } = criteria;
-    const matchesTransfers =
-      changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
+    const matchesTransfers = changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
 
     const soldOut = criteria.hideSoldOut && result.error === 'SOLD_OUT';
 
@@ -82,8 +80,7 @@ export const filterJourneys = (results: JourneyResult[], criteria: JourneyFilter
       inRange(result.departureTime.substring(11, 16), criteria.departureTime.start, criteria.departureTime.end) &&
       inRange(result.arrivalTime.substring(11, 16), criteria.arrivalTime.start, criteria.arrivalTime.end);
 
-    const matchesDays =
-      criteria.allowedDepartureDays.includes(new Date(result.departureTime).getDay()) && criteria.allowedArrivalDays.includes(new Date(result.arrivalTime).getDay());
+    const matchesDays = criteria.allowedDepartureDays.includes(new Date(result.departureTime).getDay()) && criteria.allowedArrivalDays.includes(new Date(result.arrivalTime).getDay());
 
     const duration = getDurationMinutes(result);
     const matchesDuration = !criteria.durationRange || (duration >= criteria.durationRange[0] && duration <= criteria.durationRange[1]);

@@ -18,18 +18,7 @@ interface PassengerStepProps {
   onPrevious: () => void;
 }
 
-export default function PassengerStep({
-  passengers,
-  totalPassengers,
-  originName,
-  destinationName,
-  startDate,
-  endDate,
-  loading,
-  onPassengerChange,
-  onNext,
-  onPrevious,
-}: PassengerStepProps) {
+export default function PassengerStep({ passengers, totalPassengers, originName, destinationName, startDate, endDate, loading, onPassengerChange, onNext, onPrevious }: PassengerStepProps) {
   const isValid = totalPassengers > 0 && totalPassengers <= MAX_PASSENGERS;
 
   return (
@@ -53,14 +42,7 @@ export default function PassengerStep({
                   <Minus className="h-4 w-4" />
                 </Button>
                 <span className="w-8 text-center font-medium">{count}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPassengerChange(key, 1)}
-                  disabled={totalPassengers >= MAX_PASSENGERS}
-                  className="h-8 w-8 p-0"
-                  aria-label={`${label} +`}
-                >
+                <Button variant="outline" size="sm" onClick={() => onPassengerChange(key, 1)} disabled={totalPassengers >= MAX_PASSENGERS} className="h-8 w-8 p-0" aria-label={`${label} +`}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>

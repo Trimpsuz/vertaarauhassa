@@ -15,17 +15,7 @@ interface StationStepProps {
   onNext: () => void;
 }
 
-export default function StationStep({
-  origin,
-  destination,
-  stations,
-  stationsLoading,
-  stationControlsDisabled,
-  getStationName,
-  onOriginSelect,
-  onDestinationSelect,
-  onNext,
-}: StationStepProps) {
+export default function StationStep({ origin, destination, stations, stationsLoading, stationControlsDisabled, getStationName, onOriginSelect, onDestinationSelect, onNext }: StationStepProps) {
   const isValid = stations.length > 0 && origin !== '' && destination !== '' && origin !== destination;
   const loading = stationsLoading && stations.length === 0;
 

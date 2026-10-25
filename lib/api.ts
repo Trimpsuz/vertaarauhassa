@@ -197,10 +197,14 @@ export const searchJourney = async (
 
 export const createSalesSession = async (journeyOptionId: string) => {
   try {
-    const response = await axios.post<TrpcResponse<CreateSalesSessionResult>>(`${TRPC_ENDPOINT}/sales.createNewSalesSession`, { 0: { journeyOptionId } }, {
-      params: { batch: 1 },
-      timeout: REQUEST_TIMEOUT_MS,
-    });
+    const response = await axios.post<TrpcResponse<CreateSalesSessionResult>>(
+      `${TRPC_ENDPOINT}/sales.createNewSalesSession`,
+      { 0: { journeyOptionId } },
+      {
+        params: { batch: 1 },
+        timeout: REQUEST_TIMEOUT_MS,
+      },
+    );
     const result = getTrpcData(response.data);
 
     if (!result.success) throw new Error(getErrorMessage(result.error) || 'Could not create a sales session');
