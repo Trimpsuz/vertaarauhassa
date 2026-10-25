@@ -15,6 +15,8 @@ export interface JourneyLeg {
   arrivalTime: string;
   trainNumber: string;
   commercialLineIdentifier: string;
+  trainTypeName?: string;
+  busLineId?: string;
   [key: string]: unknown;
 }
 
@@ -53,6 +55,8 @@ export function parse(journeys: JourneyOption[], stationMap: ReadonlyMap<string,
     highestLegTrainFill: item.highestLegTrainFill,
   }));
 }
+
+export type JourneyResult = ReturnType<typeof parse>[number];
 
 export function getDatesInRange(startDateStr: string, endDateStr: string) {
   const startDate = new Date(startDateStr);

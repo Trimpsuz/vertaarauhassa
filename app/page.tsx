@@ -1,333 +1,31 @@
 'use client';
 
-import FloatingControls from '@/components/FloatingControls';
-import ResultCard from '@/components/ResultCard';
-import TimePicker from '@/components/TimePicker';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
-import { createSalesSession, fetchStations, searchJourney, type Station } from '@/lib/api';
-import { Slider } from '@/components/ui/slider';
-import { cn, formatTime, inRange } from '@/lib/utils';
-import {
-  ArrowLeft,
-  ArrowUpDown,
-  Calendar,
-  Check,
-  ChevronDown,
-  ChevronsUpDown,
-  Clock,
-  Hourglass,
-  Info,
-  Loader2Icon,
-  MapPin,
-  Minus,
-  Navigation,
-  Plus,
-  RotateCcw,
-  Shuffle,
-  TrainFront,
-  Users,
-} from 'lucide-react';
-import { Poppins } from 'next/font/google';
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['800'],
-});
-
-const STATIONS_CACHE_KEY = 'vr-stations-fi-v1';
-const STATIONS_CACHE_TTL_MS = 10 * 60 * 1000;
-
-interface StationsCache {
-  cachedAt: number;
-  stations: Station[];
-}
-
-const isStation = (value: unknown): value is Station => {
-  if (typeof value !== 'object' || value === null) return false;
-  const station = value as Record<string, unknown>;
-  return typeof station.code === 'string' && typeof station.name === 'string';
-};
-
-const readStationsCache = (): StationsCache | null => {
-  try {
-    const rawCache = localStorage.getItem(STATIONS_CACHE_KEY);
-    if (!rawCache) return null;
-
-    const cache = JSON.parse(rawCache) as unknown;
-    if (
-      typeof cache !== 'object' ||
-      cache === null ||
-      !('cachedAt' in cache) ||
-      typeof cache.cachedAt !== 'number' ||
-      !('stations' in cache) ||
-      !Array.isArray(cache.stations) ||
-      cache.stations.length === 0 ||
-      !cache.stations.every(isStation)
-    ) {
-      return null;
-    }
-
-    return { cachedAt: cache.cachedAt, stations: cache.stations };
-  } catch {
-    return null;
-  }
-};
-
-const writeStationsCache = (stations: Station[]) => {
-  try {
-    localStorage.setItem(STATIONS_CACHE_KEY, JSON.stringify({ cachedAt: Date.now(), stations } satisfies StationsCache));
-  } catch {}
-};
-
-const DURATION_STEP = 5;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getDurationMinutes = (result: any) => (new Date(result.arrivalTime).getTime() - new Date(result.departureTime).getTime()) / 60000;
+import JourneyResults from '@/components/results/JourneyResults';
+import SearchWizard from '@/components/search/SearchWizard';
+import { useJourneyFilters } from '@/hooks/useJourneyFilters';
+import { useShowAlertModal } from '@/hooks/useShowAlertModal';
+import { useStations } from '@/hooks/useStations';
+import { searchJourney } from '@/lib/api';
+import { initialPassengers, MAX_PASSENGERS, type PassengerCounts, type PassengerKey } from '@/lib/constants';
+import type { JourneyResult } from '@/lib/utils';
 
 export default function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [originOpen, setOriginOpen] = useState(false);
-  const [destinationOpen, setDestinationOpen] = useState(false);
-  const [origin, setOrigin] = useState<string>('');
-  const [destination, setDestination] = useState<string>('');
-  const [stations, setStations] = useState<Station[]>([]);
-  const [stationsLoading, setStationsLoading] = useState(true);
-  const [stationsLoadFailed, setStationsLoadFailed] = useState(false);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
-  const [seniors, setSeniors] = useState(0);
-  const [students, setStudents] = useState(0);
-  const [conscripts, setConscripts] = useState(0);
-  const [fdfContract, setFdfContract] = useState(0);
-  const [changeCount, setChangeCount] = useState('any');
-  const [allowPendolino, setAllowPendolino] = useState(true);
-  const [allowInterCity, setAllowInterCity] = useState(true);
-  const [allowBus, setAllowBus] = useState(true);
-  const [allowNight, setAllowNight] = useState(true);
-  const [allowCommuter, setAllowCommuter] = useState(true);
-  const [allowRailCar, setAllowRailCar] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [searchResults, setSearchResults] = useState<any>([]);
-  const [sort, setSort] = useState('startTime');
-  const [reverse, setReverse] = useState(false);
-  const [hideSoldOut, setHideSoldOut] = useState(true);
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [passengers, setPassengers] = useState<PassengerCounts>(initialPassengers);
+  const [searchResults, setSearchResults] = useState<JourneyResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showAlertModal, setShowAlertModal] = useState(true);
-  const [departureTimeStart, setDepartureTimeStart] = useState('00:00');
-  const [departureTimeEnd, setDepartureTimeEnd] = useState('23:59');
-  const [arrivalTimeStart, setArrivalTimeStart] = useState('00:00');
-  const [arrivalTimeEnd, setArrivalTimeEnd] = useState('23:59');
-  const [allowedDepartureDays, setAllowedDepartureDays] = useState([0, 1, 2, 3, 4, 5, 6]);
-  const [allowedArrivalDays, setAllowedArrivalDays] = useState([0, 1, 2, 3, 4, 5, 6]);
-  // null means the full range of the current results
-  const [durationRange, setDurationRange] = useState<number[] | null>(null);
+  const [showAlertModal, setShowAlertModal] = useShowAlertModal();
 
-  const weekdays = [
-    { label: 'Su', value: 0 },
-    { label: 'Ma', value: 1 },
-    { label: 'Ti', value: 2 },
-    { label: 'Ke', value: 3 },
-    { label: 'To', value: 4 },
-    { label: 'Pe', value: 5 },
-    { label: 'La', value: 6 },
-  ];
+  const { stations, stationsLoading, stationMap, getStationName, stationControlsDisabled } = useStations();
+  const filters = useJourneyFilters(searchResults);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('showAlertModal');
-    if (saved) setShowAlertModal(JSON.parse(saved));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('showAlertModal', JSON.stringify(showAlertModal));
-  }, [showAlertModal]);
-
-  const loadStations = useCallback(async () => {
-    const cached = readStationsCache();
-    if (cached) {
-      setStations(cached.stations);
-      const cacheAge = Date.now() - cached.cachedAt;
-      if (cacheAge >= 0 && cacheAge < STATIONS_CACHE_TTL_MS) {
-        setStationsLoading(false);
-        setStationsLoadFailed(false);
-        return;
-      }
-    }
-
-    setStationsLoading(true);
-    setStationsLoadFailed(false);
-
-    try {
-      const fetchedStations = await fetchStations();
-      setStations(fetchedStations);
-      writeStationsCache(fetchedStations);
-    } catch {
-      if (cached) {
-        toast.warning('Asemien päivitys epäonnistui. Käytetään välimuistia.');
-      } else {
-        setStations([]);
-        setStationsLoadFailed(true);
-        toast.error('Asemien lataaminen epäonnistui.');
-      }
-    } finally {
-      setStationsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadStations();
-  }, [loadStations]);
-
-  const sortOptions = ['startTime', 'endTime', 'duration', 'price', 'transfers', 'fill'];
-  const sortOptionNames = new Map<string, string>([
-    ['startTime', 'Lähtöaika'],
-    ['endTime', 'Saapumisaika'],
-    ['duration', 'Kesto'],
-    ['price', 'Hinta'],
-    ['transfers', 'Vaihtojen määrä'],
-    ['fill', 'Täyttöaste'],
-  ]);
-
-  const durationBounds = useMemo(() => {
-    if (searchResults.length === 0) return [0, 0];
-    const durations: number[] = searchResults.map(getDurationMinutes);
-    return [Math.min(...durations), Math.max(...durations)];
-  }, [searchResults]);
-
-  const sliderBounds = useMemo(() => [Math.floor(durationBounds[0] / DURATION_STEP) * DURATION_STEP, Math.ceil(durationBounds[1] / DURATION_STEP) * DURATION_STEP], [durationBounds]);
-
-  const toSliderValue = (minutes: number) => (minutes === durationBounds[0] ? sliderBounds[0] : minutes === durationBounds[1] ? sliderBounds[1] : minutes);
-  const toDurationValue = (minutes: number) => (minutes === sliderBounds[0] ? durationBounds[0] : minutes === sliderBounds[1] ? durationBounds[1] : minutes);
-
-  const widestLabel = useMemo(() => {
-    const [min, max] = durationBounds;
-    const [sliderMin, sliderMax] = sliderBounds;
-    let widest = '';
-    for (let m = sliderMin; m <= sliderMax; m += DURATION_STEP) {
-      const s = formatTime((m === sliderMin ? min : m === sliderMax ? max : m) * 60000);
-      if (s.length > widest.length) widest = s;
-    }
-    return `${widest} – ${widest}`;
-  }, [sliderBounds, durationBounds]);
-
-  const durationValue = durationRange ?? durationBounds;
-  const deferredDurationRange = useDeferredValue(durationRange);
-
-  const filteredSearchResults = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return searchResults.filter((result: any) => {
-      const legs = result.legs ?? [];
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isPendolino = legs.some((leg: any) => leg.trainType === 'S');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isInterCity = legs.some((leg: any) => leg.trainType === 'IC');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isBus = legs.some((leg: any) => ['JLA', 'BLV'].includes(leg.trainType));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isNight = legs.some((leg: any) => leg.trainType === 'PYO');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isCommuter = legs.some((leg: any) => leg.trainType === 'LOL');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isRailCar = legs.some((leg: any) => leg.trainType === 'HDM');
-
-      const matchesType =
-        (!isPendolino || allowPendolino) && (!isInterCity || allowInterCity) && (!isBus || allowBus) && (!isNight || allowNight) && (!isCommuter || allowCommuter) && (!isRailCar || allowRailCar);
-
-      const matchesTransfers = changeCount === 'any' || (changeCount === 'direct' && result.transfers === 0) || (!['any', 'direct'].includes(changeCount) && result.transfers <= Number(changeCount));
-
-      const soldOut = hideSoldOut && result.error === 'SOLD_OUT';
-
-      const matchesTime = inRange(result.departureTime.substring(11, 16), departureTimeStart, departureTimeEnd) && inRange(result.arrivalTime.substring(11, 16), arrivalTimeStart, arrivalTimeEnd);
-
-      const matchesDays = allowedDepartureDays.includes(new Date(result.departureTime).getDay()) && allowedArrivalDays.includes(new Date(result.arrivalTime).getDay());
-
-      const duration = getDurationMinutes(result);
-      const matchesDuration = !deferredDurationRange || (duration >= deferredDurationRange[0] && duration <= deferredDurationRange[1]);
-
-      return matchesType && matchesTransfers && !soldOut && matchesTime && matchesDays && matchesDuration;
-    });
-  }, [
-    searchResults,
-    allowPendolino,
-    allowInterCity,
-    allowBus,
-    allowNight,
-    allowCommuter,
-    allowRailCar,
-    changeCount,
-    hideSoldOut,
-    departureTimeStart,
-    departureTimeEnd,
-    arrivalTimeStart,
-    arrivalTimeEnd,
-    allowedDepartureDays,
-    allowedArrivalDays,
-    deferredDurationRange,
-  ]);
-
-  const sortedSearchResults = useMemo(() => {
-    return [...searchResults].sort((a, b) => {
-      if (sort === 'startTime') {
-        return reverse ? new Date(b.departureTime).getTime() - new Date(a.departureTime).getTime() : new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
-      }
-      if (sort === 'endTime') {
-        return reverse ? new Date(b.arrivalTime).getTime() - new Date(a.arrivalTime).getTime() : new Date(a.arrivalTime).getTime() - new Date(b.arrivalTime).getTime();
-      }
-      if (sort === 'duration') {
-        const durA = new Date(a.arrivalTime).getTime() - new Date(a.departureTime).getTime();
-        const durB = new Date(b.arrivalTime).getTime() - new Date(b.departureTime).getTime();
-        return reverse ? durB - durA : durA - durB;
-      }
-      if (sort === 'price') {
-        return reverse ? b.totalPriceCents - a.totalPriceCents : a.totalPriceCents - b.totalPriceCents;
-      }
-      if (sort === 'transfers') {
-        return reverse ? b.transfers - a.transfers : a.transfers - b.transfers;
-      }
-      if (sort === 'fill') {
-        return reverse ? b.highestLegTrainFill - a.highestLegTrainFill : a.highestLegTrainFill - b.highestLegTrainFill;
-      }
-      return 0;
-    });
-  }, [searchResults, sort, reverse]);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const visibleResultIds = useMemo(() => new Set<string>(filteredSearchResults.map((result: any) => result.id)), [filteredSearchResults]);
-
-  const createdSales = useRef(new Map<string, string>());
-
-  const stationMap = useMemo(() => new Map<string, string>(stations.map((station) => [station.code, station.name])), [stations]);
-  const getStationName = (stationCode: string) => stationMap.get(stationCode) ?? stationCode;
-  const stationControlsDisabled = stationsLoadFailed || (stationsLoading && stations.length === 0);
-
-  const openSale = useCallback(async (id: string) => {
-    let saleId = createdSales.current.get(id);
-    if (saleId) {
-      window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
-      return;
-    }
-
-    const newSaleId = await createSalesSession(id);
-    if (!newSaleId) return;
-
-    saleId = newSaleId;
-    createdSales.current.set(id, saleId);
-
-    window.open(`https://www.vr.fi/logout?locale=fi&returnTo=%2Fkertalippu-menomatkan-tiedot%3FsaleId%3D${saleId}&initLogout=true`, '_blank');
-  }, []);
+  const totalPassengers = Object.values(passengers).reduce((sum, count) => sum + count, 0);
 
   const handleOriginSelect = (stationKey: string) => {
     if (stationKey === destination) {
@@ -336,7 +34,6 @@ export default function HomePage() {
     }
 
     setOrigin(stationKey === origin ? '' : stationKey);
-    setOriginOpen(false);
   };
 
   const handleDestinationSelect = (stationKey: string) => {
@@ -346,7 +43,14 @@ export default function HomePage() {
     }
 
     setDestination(stationKey === destination ? '' : stationKey);
-    setDestinationOpen(false);
+  };
+
+  const handlePassengerChange = (type: PassengerKey, delta: 1 | -1) => {
+    setPassengers((prev) => {
+      const total = Object.values(prev).reduce((sum, count) => sum + count, 0);
+      if (delta > 0 && total >= MAX_PASSENGERS) return prev;
+      return { ...prev, [type]: Math.max(prev[type] + delta, 0) };
+    });
   };
 
   const handleNextStep = async () => {
@@ -354,9 +58,21 @@ export default function HomePage() {
       setCurrentStep(2);
     } else if (currentStep === 2 && startDate && endDate) {
       setCurrentStep(3);
-    } else if (currentStep === 3 && 19 > adults + children + seniors + students + conscripts + fdfContract && adults + children + seniors + students + conscripts + fdfContract > 0) {
+    } else if (currentStep === 3 && totalPassengers > 0 && totalPassengers <= MAX_PASSENGERS) {
       setLoading(true);
-      const results = await searchJourney(origin, destination, startDate, endDate, adults, children, seniors, students, conscripts, fdfContract, stationMap);
+      const results = await searchJourney(
+        origin,
+        destination,
+        startDate,
+        endDate,
+        passengers.adults,
+        passengers.children,
+        passengers.seniors,
+        passengers.students,
+        passengers.conscripts,
+        passengers.fdfContract,
+        stationMap,
+      );
       setLoading(false);
       if (results.length === 0) {
         toast.error('Matkoja ei löytynyt', {
@@ -365,7 +81,7 @@ export default function HomePage() {
         return;
       }
       setSearchResults(results);
-      setDurationRange(null);
+      filters.setDurationRange(null);
       setCurrentStep(4);
     }
   };
@@ -376,756 +92,34 @@ export default function HomePage() {
     }
     if (currentStep === 4) {
       setSearchResults([]);
-      createdSales.current.clear();
     }
   };
 
-  const incrementPassenger = (type: 'adults' | 'children' | 'seniors' | 'students' | 'conscripts' | 'fdfContract') => {
-    if (type === 'adults') setAdults((prev) => Math.min(prev + 1, 18 - (children + seniors + students + conscripts + fdfContract)));
-    if (type === 'children') setChildren((prev) => Math.min(prev + 1, 18 - (adults + seniors + students + conscripts + fdfContract)));
-    if (type === 'seniors') setSeniors((prev) => Math.min(prev + 1, 18 - (children + adults + students + conscripts + fdfContract)));
-    if (type === 'students') setStudents((prev) => Math.min(prev + 1, 18 - (children + adults + seniors + conscripts + fdfContract)));
-    if (type === 'conscripts') setConscripts((prev) => Math.min(prev + 1, 18 - (children + adults + students + seniors + fdfContract)));
-    if (type === 'fdfContract') setFdfContract((prev) => Math.min(prev + 1, 18 - (children + adults + students + seniors + conscripts)));
-  };
-
-  const decrementPassenger = (type: 'adults' | 'children' | 'seniors' | 'students' | 'conscripts' | 'fdfContract') => {
-    if (type === 'adults') setAdults((prev) => Math.max(prev - 1, 0));
-    if (type === 'children') setChildren((prev) => Math.max(prev - 1, 0));
-    if (type === 'seniors') setSeniors((prev) => Math.max(prev - 1, 0));
-    if (type === 'students') setStudents((prev) => Math.max(prev - 1, 0));
-    if (type === 'conscripts') setConscripts((prev) => Math.max(prev - 1, 0));
-    if (type === 'fdfContract') setFdfContract((prev) => Math.max(prev - 1, 0));
-  };
-
-  const isStep1Valid = stations.length > 0 && origin && destination && origin !== destination;
-  const isStep2Valid = startDate && endDate;
-  const isStep3Valid = 19 > adults + children + seniors + students + conscripts + fdfContract && adults + children + seniors + students + conscripts + fdfContract > 0;
-
-  const today = new Date().toISOString().split('T')[0];
-
   if (searchResults.length === 0) {
     return (
-      <>
-        <FloatingControls />
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 gap-12 flex-col">
-          <Card className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
-            <CardHeader className="text-center">
-              <CardTitle className={`text-xl sm:text-2xl font-bold ${poppins.className}`}>VertaaRauhassa</CardTitle>
-              <CardDescription>{currentStep === 1 ? 'Valitse lähto- ja kohdeasemat' : currentStep === 2 ? 'Valitse hakuväli' : currentStep === 3 ? 'Valitse matkustajien määrä' : ''}</CardDescription>
-              <div className="flex justify-center gap-2 mt-4">
-                <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 1 ? 'bg-primary' : 'bg-muted')} />
-                <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 2 ? 'bg-primary' : 'bg-muted')} />
-                <div className={cn('w-6 sm:w-8 h-2 rounded-full', currentStep >= 3 ? 'bg-primary' : 'bg-muted')} />
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-6">
-              {currentStep === 1 && (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2" id="origin-label">
-                      <MapPin className="h-4 w-4" />
-                      Mistä
-                    </label>
-                    <Popover open={originOpen} onOpenChange={setOriginOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-labelledby="origin-label"
-                          aria-expanded={originOpen}
-                          disabled={stationControlsDisabled}
-                          className="w-full justify-between bg-transparent"
-                        >
-                          {stationsLoading && stations.length === 0 ? (
-                            <div className="flex gap-1 items-center">
-                              <Loader2Icon className="h-4 w-4 animate-spin" />
-                              Ladataan asemia...
-                            </div>
-                          ) : (
-                            <>
-                              {origin ? getStationName(origin) : 'Valitse lähtöasema...'}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full sm:min-w-[300px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Hae..." />
-                          <CommandList>
-                            <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
-                            <CommandGroup>
-                              {stations.map((station) => (
-                                <CommandItem key={station.code} value={station.name} onSelect={() => handleOriginSelect(station.code)}>
-                                  <Check className={cn('mr-2 h-4 w-4', origin === station.code ? 'opacity-100' : 'opacity-0')} />
-                                  {station.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2" id="destination-label">
-                      <Navigation className="h-4 w-4" />
-                      Minne
-                    </label>
-                    <Popover open={destinationOpen} onOpenChange={setDestinationOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-labelledby="destination-label"
-                          aria-expanded={destinationOpen}
-                          disabled={stationControlsDisabled}
-                          className="w-full justify-between bg-transparent"
-                        >
-                          {stationsLoading && stations.length === 0 ? (
-                            <div className="flex gap-1 items-center">
-                              <Loader2Icon className="h-4 w-4 animate-spin" />
-                              Ladataan asemia...
-                            </div>
-                          ) : (
-                            <>
-                              {destination ? getStationName(destination) : 'Valitse kohdeasema...'}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full sm:min-w-[300px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Hae..." />
-                          <CommandList>
-                            <CommandEmpty>Asemia ei lötynyt.</CommandEmpty>
-                            <CommandGroup>
-                              {stations.map((station) => (
-                                <CommandItem key={station.code} value={station.name} onSelect={() => handleDestinationSelect(station.code)}>
-                                  <Check className={cn('mr-2 h-4 w-4', destination === station.code ? 'opacity-100' : 'opacity-0')} />
-                                  {station.name}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <Button onClick={handleNextStep} disabled={!isStep1Valid} className="w-full py-2 sm:py-0" size="lg">
-                    Seuraava: Valitse hakuväli
-                  </Button>
-                </>
-              )}
-
-              {currentStep === 2 && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="travel-start-date" className="text-sm font-medium flex items-center gap-2" id="start-date-label">
-                      <Calendar className="h-4 w-4" />
-                      Mistä
-                    </Label>
-                    <Input
-                      id="travel-start-date"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => {
-                        setStartDate(e.target.value);
-                        if (!endDate || new Date(e.target.value) > new Date(endDate)) setEndDate(e.target.value);
-                      }}
-                      min={today}
-                      className="w-full"
-                      aria-labelledby="start-date-label"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="travel-end-date" className="text-sm font-medium flex items-center gap-2" id="end-date-label">
-                      <Calendar className="h-4 w-4" />
-                      Mihin
-                    </Label>
-                    <Input
-                      id="travel-end-date"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => {
-                        setEndDate(e.target.value);
-                        if (startDate && new Date(e.target.value) < new Date(startDate)) setStartDate(e.target.value);
-                      }}
-                      min={today}
-                      className="w-full"
-                      aria-labelledby="end-date-label"
-                    />
-
-                    <div className="flex flex-row gap-1">
-                      <Button
-                        variant="outline"
-                        disabled={!endDate}
-                        onClick={() => {
-                          setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 1)).toISOString().split('T')[0]);
-                        }}
-                      >
-                        +1 pv
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={!endDate}
-                        onClick={() => {
-                          setEndDate(new Date(new Date(endDate).setDate(new Date(endDate).getDate() + 7)).toISOString().split('T')[0]);
-                        }}
-                      >
-                        +1 vk
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={!endDate}
-                        onClick={() => {
-                          setEndDate(new Date(new Date(endDate).setMonth(new Date(endDate).getMonth() + 1)).toISOString().split('T')[0]);
-                        }}
-                      >
-                        +1 kk
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                    <h4 className="font-medium text-sm">Yhteenveto</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3" /> Mistä: {getStationName(origin)}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Navigation className="h-3 w-3" /> Minne: {getStationName(destination)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
-                      <ArrowLeft className="h-4 w-4" />
-                      Takaisin
-                    </Button>
-                    <Button onClick={handleNextStep} disabled={!isStep2Valid} size="lg" className="flex-1 py-2 sm:py-0">
-                      Seuraava: Matkustajien määrä
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {currentStep === 3 && (
-                <>
-                  <div className="space-y-4">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Matkustajat
-                    </Label>
-
-                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                      <div>
-                        <div className="font-medium text-sm">Aikuiset</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('adults')} disabled={adults <= 0} className="h-8 w-8 p-0" aria-label="Aikuiset −">
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{adults}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => incrementPassenger('adults')}
-                          disabled={adults >= 18 - (children + seniors + students + conscripts + fdfContract)}
-                          className="h-8 w-8 p-0"
-                          aria-label="Aikuiset +"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                      <div>
-                        <div className="font-medium text-sm">Lapset</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('children')} disabled={children <= 0} className="h-8 w-8 p-0" aria-label="Lapset −">
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{children}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => incrementPassenger('children')}
-                          disabled={children >= 18 - (adults + seniors + students + conscripts + fdfContract)}
-                          className="h-8 w-8 p-0"
-                          aria-label="Lapset +"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                      <div>
-                        <div className="font-medium text-sm">Eläkeläiset</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('seniors')} disabled={seniors <= 0} className="h-8 w-8 p-0" aria-label="Eläkeläiset −">
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{seniors}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => incrementPassenger('seniors')}
-                          disabled={seniors >= 18 - (children + adults + students + conscripts + fdfContract)}
-                          className="h-8 w-8 p-0"
-                          aria-label="Eläkeläiset +"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                      <div>
-                        <div className="font-medium text-sm">Opiskelijat</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('students')} disabled={students <= 0} className="h-8 w-8 p-0" aria-label="Opiskelijat −">
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{students}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => incrementPassenger('students')}
-                          disabled={students >= 18 - (children + seniors + adults + conscripts + fdfContract)}
-                          className="h-8 w-8 p-0"
-                          aria-label="Opiskelijat +"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                      <div>
-                        <div className="font-medium text-sm">Asevelvolliset</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={() => decrementPassenger('conscripts')} disabled={conscripts <= 0} className="h-8 w-8 p-0" aria-label="Asevelvolliset −">
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{conscripts}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => incrementPassenger('conscripts')}
-                          disabled={conscripts >= 18 - (children + seniors + students + adults + fdfContract)}
-                          className="h-8 w-8 p-0"
-                          aria-label="Asevelvolliset +"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between p-3 border rounded-lg gap-2">
-                      <div>
-                        <div className="font-medium text-sm">Asevelvolliset, palvelusmatka</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => decrementPassenger('fdfContract')}
-                          disabled={fdfContract <= 0}
-                          className="h-8 w-8 p-0"
-                          aria-label="Asevelvolliset, palvelusmatka −"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{fdfContract}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => incrementPassenger('fdfContract')}
-                          disabled={fdfContract >= 18 - (children + seniors + students + adults + conscripts)}
-                          className="h-8 w-8 p-0"
-                          aria-label="Asevelvolliset, palvelusmatka +"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {adults + children + seniors + students + conscripts + fdfContract == 18 && (
-                      <Alert variant="default">
-                        <Info />
-                        <AlertTitle>Voit lisätä enintään 18 matkustajaa</AlertTitle>
-                        <AlertDescription>
-                          <p>
-                            Yli 18 hengen matkat varataan{' '}
-                            <a className="underline" href="https://www.vr.fi/palvelut-junassa/palvelut-ryhmille">
-                              ryhmämyynnin kautta
-                            </a>
-                          </p>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-
-                  <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                    <h4 className="font-medium text-sm">Yhteenveto</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3" /> Mistä: {getStationName(origin)}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Navigation className="h-3 w-3" /> Minne: {getStationName(destination)}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3 w-3" /> Milloin: {startDate} – {endDate}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button onClick={handlePreviousStep} variant="outline" size="lg" className="flex-1 bg-transparent py-2 sm:py-0">
-                      <ArrowLeft className="h-4 w-4" />
-                      Takaisin
-                    </Button>
-                    <Button onClick={handleNextStep} disabled={!isStep3Valid || loading} size="lg" className="flex-1 py-2 sm:py-0">
-                      {loading && <Loader2Icon className="animate-spin" />}
-                      Hae
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <p className="text-md text-muted-foreground">
-              Tämä on{' '}
-              <a className="underline cursor-pointer" href="https://github.com/Trimpsuz/vertaarauhassa">
-                avoimen lähdekoodin
-              </a>{' '}
-              projekti
-            </p>
-
-            <div>
-              <p className="text-sm text-muted-foreground">VertaaRauhassa {process.env.NEXT_PUBLIC_APP_VERSION}</p>
-              <p className="text-sm text-muted-foreground">
-                Emme ole <span className="italic">VR-Yhtymä Oyj:n</span>, sen tytäryhtiöiden tai sen yhteistyökumppanien kanssa sidoksissa tai millään tavalla virallisesti yhteydessä niihin.
-                Virallinen verkkosivusto on osoitteessa{' '}
-                <a className="underline cursor-pointer" href="https://www.vr.fi/">
-                  www.vr.fi
-                </a>
-                .
-              </p>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  } else {
-    return (
-      <>
-        <FloatingControls showScroll={true} />
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 flex-col gap-6">
-          <h1 className={`text-xl sm:text-2xl font-bold text-center ${poppins.className}`}>
-            {searchResults[0].departureStationName} – {searchResults[0].arrivalStationName}
-          </h1>
-
-          <div className="flex flex-col gap-3 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <div className="flex items-center gap-1">
-                <Shuffle className="h-4 w-4" />
-                <span className="font-medium" id="transfers-label">
-                  Vaihdot
-                </span>
-              </div>
-              <RadioGroup className="flex flex-wrap sm:flex-nowrap gap-2" value={changeCount} onValueChange={setChangeCount} defaultValue="any" aria-labelledby="transfers-label">
-                {[
-                  { value: 'any', label: 'Kaikki' },
-                  { value: 'direct', label: 'Vain suorat' },
-                  { value: '1', label: 'Yksi tai vähemmän' },
-                  { value: '2', label: 'Kaksi tai vähemmän' },
-                ].map((opt) => (
-                  <div key={opt.value} className="flex items-center space-x-1">
-                    <RadioGroupItem className="cursor-pointer" value={opt.value} id={`option-${opt.value}`} />
-                    <Label className="cursor-pointer" htmlFor={`option-${opt.value}`}>
-                      {opt.label}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <div className="flex items-center gap-1">
-                <TrainFront className="h-4 w-4" />
-                <span className="font-medium" id="train-types-label">
-                  Junatyypit
-                </span>
-              </div>
-              <div className="flex flex-wrap sm:flex-nowrap gap-2" aria-labelledby="train-types-label">
-                <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowPendolino} onCheckedChange={setAllowPendolino} aria-labelledby="pendolino-label" />
-                  <Label id="pendolino-label">Pendolino</Label>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowInterCity} onCheckedChange={setAllowInterCity} aria-labelledby="intercity-label" />
-                  <Label id="intercity-label">InterCity</Label>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowNight} onCheckedChange={setAllowNight} aria-labelledby="night-label" />
-                  <Label id="night-label">Yöjuna</Label>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowCommuter} onCheckedChange={setAllowCommuter} aria-labelledby="commuter-label" />
-                  <Label id="commuter-label">Lähijuna</Label>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowBus} onCheckedChange={setAllowBus} aria-labelledby="bus-label" />
-                  <Label id="bus-label">Ratatyöbussi</Label>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Switch className="cursor-pointer" checked={allowRailCar} onCheckedChange={setAllowRailCar} aria-labelledby="railcar-label" />
-                  <Label id="railcar-label">Kiskobussi</Label>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-row flex-wrap gap-2 w-full items-center">
-              <div className="flex items-center gap-1 shrink-0">
-                <Clock className="h-4 w-4" />
-                <span className="font-medium" id="departure-time-label">
-                  Lähtöaika
-                </span>
-              </div>
-
-              <div className="flex flex-row gap-2 items-center flex-none" aria-labelledby="departure-time-label">
-                <TimePicker value={departureTimeStart} onChange={setDepartureTimeStart} aria-label="Lähtöaika alkaen" />
-
-                <span className="shrink-0">–</span>
-
-                <TimePicker value={departureTimeEnd} onChange={setDepartureTimeEnd} aria-label="Lähtöaika asti" />
-
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="flex-none"
-                  onClick={() => {
-                    setDepartureTimeStart('00:00');
-                    setDepartureTimeEnd('23:59');
-                  }}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    {allowedDepartureDays.length === 7 ? 'Kaikki viikonpäivät' : `${allowedDepartureDays.length} viikonpäivä${allowedDepartureDays.length !== 1 ? 'ä' : ''}`}
-                  </Button>
-                </PopoverTrigger>
-
-                <PopoverContent className="flex flex-col gap-3">
-                  <div className="flex flex-row gap-2 flex-wrap">
-                    {weekdays.map((day) => {
-                      const selected = allowedDepartureDays.includes(day.value);
-
-                      return (
-                        <Button
-                          key={day.value}
-                          type="button"
-                          size="sm"
-                          variant={selected ? 'default' : 'outline'}
-                          className={cn('transition', selected && 'bg-primary text-primary-foreground')}
-                          onClick={() => {
-                            setAllowedDepartureDays((prev) => (prev.includes(day.value) ? prev.filter((d) => d !== day.value) : [...prev, day.value].sort((a, b) => a - b)));
-                          }}
-                        >
-                          {day.label}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-row gap-2">
-                    <Button onClick={() => setAllowedDepartureDays([0, 1, 2, 3, 4, 5, 6])}>Valitse kaikki</Button>
-                    <Button variant="outline" onClick={() => setAllowedDepartureDays([])}>
-                      Poista valinnat
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="flex flex-row flex-wrap gap-2 w-full items-center">
-              <div className="flex items-center gap-1 shrink-0">
-                <Clock className="h-4 w-4" />
-                <span className="font-medium" id="arrival-time-label">
-                  Saapumisaika
-                </span>
-              </div>
-
-              <div className="flex flex-row gap-2 items-center flex-none" aria-labelledby="arrival-time-label">
-                <TimePicker value={arrivalTimeStart} onChange={setArrivalTimeStart} aria-label="Saapumisaika alkaen" />
-
-                <span className="shrink-0">–</span>
-
-                <TimePicker value={arrivalTimeEnd} onChange={setArrivalTimeEnd} aria-label="Saapumisaika asti" />
-
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="flex-none"
-                  onClick={() => {
-                    setArrivalTimeStart('00:00');
-                    setArrivalTimeEnd('23:59');
-                  }}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">{allowedArrivalDays.length === 7 ? 'Kaikki viikonpäivät' : `${allowedArrivalDays.length} viikonpäivä${allowedArrivalDays.length !== 1 ? 'ä' : ''}`}</Button>
-                </PopoverTrigger>
-
-                <PopoverContent className="flex flex-col gap-3">
-                  <div className="flex flex-row gap-2 flex-wrap">
-                    {weekdays.map((day) => {
-                      const selected = allowedArrivalDays.includes(day.value);
-
-                      return (
-                        <Button
-                          key={day.value}
-                          type="button"
-                          size="sm"
-                          variant={selected ? 'default' : 'outline'}
-                          className={cn('transition', selected && 'bg-primary text-primary-foreground')}
-                          onClick={() => {
-                            setAllowedArrivalDays((prev) => (prev.includes(day.value) ? prev.filter((d) => d !== day.value) : [...prev, day.value].sort((a, b) => a - b)));
-                          }}
-                        >
-                          {day.label}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-row gap-2">
-                    <Button onClick={() => setAllowedArrivalDays([0, 1, 2, 3, 4, 5, 6])}>Valitse kaikki</Button>
-                    <Button variant="outline" onClick={() => setAllowedArrivalDays([])}>
-                      Poista valinnat
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="flex flex-row flex-wrap gap-2 w-full items-center">
-              <div className="flex items-center gap-1 shrink-0">
-                <Hourglass className="h-4 w-4" />
-                <span className="font-medium" id="duration-label">
-                  Kesto
-                </span>
-              </div>
-
-              <div className="flex flex-row gap-2 items-center" aria-labelledby="duration-label">
-                <Slider
-                  min={sliderBounds[0]}
-                  max={sliderBounds[1]}
-                  step={DURATION_STEP}
-                  minStepsBetweenThumbs={0}
-                  value={[toSliderValue(durationValue[0]), toSliderValue(durationValue[1])]}
-                  onValueChange={(value) => {
-                    const range = [toDurationValue(value[0]), toDurationValue(value[1])];
-                    setDurationRange(range[0] === durationBounds[0] && range[1] === durationBounds[1] ? null : range);
-                  }}
-                  disabled={durationBounds[0] === durationBounds[1]}
-                  aria-label="Matkan kesto"
-                  className="w-64 cursor-pointer"
-                />
-
-                <span className="inline-grid shrink-0 tabular-nums text-sm text-center">
-                  <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
-                    {widestLabel}
-                  </span>
-                  <span className="col-start-1 row-start-1 whitespace-nowrap">
-                    {formatTime(durationValue[0] * 60000)} – {formatTime(durationValue[1] * 60000)}
-                  </span>
-                </span>
-
-                <Button size="icon" variant="outline" className="flex-none" onClick={() => setDurationRange(null)}>
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
-              <div className="flex flex-row gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      Lajittele: {sortOptionNames.get(sort)}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {sortOptions.map((option) => (
-                      <DropdownMenuItem key={option} onClick={() => setSort(option)} className={`cursor-pointer ${sort === option ? 'bg-muted' : ''}`}>
-                        {sortOptionNames.get(option)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Button variant={reverse ? 'default' : 'outline'} size="icon" onClick={() => setReverse((prev) => !prev)} aria-label="Vaihda järjestys">
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Switch className="cursor-pointer" checked={hideSoldOut} onCheckedChange={setHideSoldOut} aria-labelledby="sold-out-label" />
-                <Label id="sold-out-label">Piilota loppuunmyydyt</Label>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
-            {filteredSearchResults.length === 0 && (
-              <Alert variant="default">
-                <Info />
-                <AlertTitle>Matkoja ei löytynyt</AlertTitle>
-                <AlertDescription>
-                  <p>Kokeile muuttaa rajausehtoja</p>
-                </AlertDescription>
-              </Alert>
-            )}
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {sortedSearchResults.map((result: any) => (
-              <div key={result.id} hidden={!visibleResultIds.has(result.id)}>
-                <ResultCard result={result} openSale={openSale} showAlertModal={showAlertModal} setShowAlertModal={setShowAlertModal} />
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-row w-full max-w-md sm:max-w-xl justify-center">
-            <Button onClick={handlePreviousStep} variant="outline" className="w-full bg-transparent">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Takaisin
-            </Button>
-          </div>
-        </div>
-      </>
+      <SearchWizard
+        step={currentStep}
+        origin={origin}
+        destination={destination}
+        stations={stations}
+        stationsLoading={stationsLoading}
+        stationControlsDisabled={stationControlsDisabled}
+        getStationName={getStationName}
+        onOriginSelect={handleOriginSelect}
+        onDestinationSelect={handleDestinationSelect}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        passengers={passengers}
+        totalPassengers={totalPassengers}
+        loading={loading}
+        onPassengerChange={handlePassengerChange}
+        onNext={handleNextStep}
+        onPrevious={handlePreviousStep}
+      />
     );
   }
+
+  return <JourneyResults results={searchResults} filters={filters} showAlertModal={showAlertModal} setShowAlertModal={setShowAlertModal} onBack={handlePreviousStep} />;
 }
