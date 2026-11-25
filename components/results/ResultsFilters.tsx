@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpDown, ChevronDown, Shuffle, TrainFront } from 'lucide-react';
+import { ArrowUpDown, Bike, ChevronDown, Shuffle, TrainFront } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -65,6 +65,30 @@ function TrainTypesFilter({ value, onChange }: TrainTypesFilterProps) {
   );
 }
 
+interface BikeFilterProps {
+  value: boolean;
+  onChange: (value: boolean) => void;
+}
+
+function BikeFilter({ value, onChange }: BikeFilterProps) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+      <div className="flex items-center gap-1">
+        <Bike className="h-4 w-4" />
+        <span className="font-medium" id="bike-label">
+          Pyörät
+        </span>
+      </div>
+      <div className="flex items-center space-x-1">
+        <Switch id="bike-switch" className="cursor-pointer" checked={value} onCheckedChange={onChange} aria-labelledby="bike-switch-label" />
+        <Label id="bike-switch-label" htmlFor="bike-switch" className="cursor-pointer">
+          Vain vapaat pyöräpaikat
+        </Label>
+      </div>
+    </div>
+  );
+}
+
 interface SortAndVisibilityProps {
   sort: JourneyFilters['sort'];
   onSortChange: (value: JourneyFilters['sort']) => void;
@@ -113,6 +137,7 @@ export default function ResultsFilters({ filters }: { filters: JourneyFilters })
     <div className="flex flex-col gap-3 w-full max-w-md sm:max-w-xl lg:max-w-4xl">
       <TransfersFilter value={filters.changeCount} onChange={filters.setChangeCount} />
       <TrainTypesFilter value={filters.trainTypes} onChange={filters.setTrainType} />
+      <BikeFilter value={filters.requireBikeSpots} onChange={filters.setRequireBikeSpots} />
       <TimeRangeFilter
         id="departure-time-label"
         label="Lähtöaika"
