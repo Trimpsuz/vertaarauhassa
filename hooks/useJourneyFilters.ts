@@ -12,6 +12,8 @@ export interface JourneyFilters {
   setTrainType: (type: TrainTypeKey, allowed: boolean) => void;
   hideSoldOut: boolean;
   setHideSoldOut: (value: boolean) => void;
+  requireBikeSpots: boolean;
+  setRequireBikeSpots: (value: boolean) => void;
   departureTime: TimeRange;
   setDepartureTime: (value: TimeRange) => void;
   arrivalTime: TimeRange;
@@ -37,6 +39,7 @@ export function useJourneyFilters(results: JourneyResult[], initial?: JourneyFil
   const [changeCount, setChangeCount] = useState(initial?.changeCount ?? 'any');
   const [trainTypes, setTrainTypes] = useState(initial?.trainTypes ?? defaultTrainTypeFilters);
   const [hideSoldOut, setHideSoldOut] = useState(initial?.hideSoldOut ?? true);
+  const [requireBikeSpots, setRequireBikeSpots] = useState(initial?.requireBikeSpots ?? false);
   const [departureTime, setDepartureTime] = useState<TimeRange>(initial?.departureTime ?? { start: '00:00', end: '23:59' });
   const [arrivalTime, setArrivalTime] = useState<TimeRange>(initial?.arrivalTime ?? { start: '00:00', end: '23:59' });
   const [allowedDepartureDays, setAllowedDepartureDays] = useState(initial?.allowedDepartureDays ?? [0, 1, 2, 3, 4, 5, 6]);
@@ -46,8 +49,8 @@ export function useJourneyFilters(results: JourneyResult[], initial?: JourneyFil
   const [reverse, setReverse] = useState(initial?.reverse ?? false);
 
   useEffect(() => {
-    updateQuery(filtersQueryUpdates({ changeCount, trainTypes, hideSoldOut, departureTime, arrivalTime, allowedDepartureDays, allowedArrivalDays, durationRange, sort, reverse }));
-  }, [changeCount, trainTypes, hideSoldOut, departureTime, arrivalTime, allowedDepartureDays, allowedArrivalDays, durationRange, sort, reverse]);
+    updateQuery(filtersQueryUpdates({ changeCount, trainTypes, hideSoldOut, requireBikeSpots, departureTime, arrivalTime, allowedDepartureDays, allowedArrivalDays, durationRange, sort, reverse }));
+  }, [changeCount, trainTypes, hideSoldOut, requireBikeSpots, departureTime, arrivalTime, allowedDepartureDays, allowedArrivalDays, durationRange, sort, reverse]);
 
   const durationBounds = useMemo<[number, number]>(() => getDurationBounds(results), [results]);
   const sliderBounds = useMemo<[number, number]>(() => [Math.floor(durationBounds[0] / DURATION_STEP) * DURATION_STEP, Math.ceil(durationBounds[1] / DURATION_STEP) * DURATION_STEP], [durationBounds]);
@@ -59,13 +62,14 @@ export function useJourneyFilters(results: JourneyResult[], initial?: JourneyFil
         changeCount,
         trainTypes,
         hideSoldOut,
+        requireBikeSpots,
         departureTime,
         arrivalTime,
         allowedDepartureDays,
         allowedArrivalDays,
         durationRange: deferredDurationRange,
       }),
-    [results, changeCount, trainTypes, hideSoldOut, departureTime, arrivalTime, allowedDepartureDays, allowedArrivalDays, deferredDurationRange],
+    [results, changeCount, trainTypes, hideSoldOut, requireBikeSpots, departureTime, arrivalTime, allowedDepartureDays, allowedArrivalDays, deferredDurationRange],
   );
   const sortedResults = useMemo(() => sortJourneys(results, sort, reverse), [results, sort, reverse]);
   const visibleResultIds = useMemo(() => new Set<string>(filteredResults.map((result) => result.id)), [filteredResults]);
@@ -79,6 +83,8 @@ export function useJourneyFilters(results: JourneyResult[], initial?: JourneyFil
     setTrainType,
     hideSoldOut,
     setHideSoldOut,
+    requireBikeSpots,
+    setRequireBikeSpots,
     departureTime,
     setDepartureTime,
     arrivalTime,
