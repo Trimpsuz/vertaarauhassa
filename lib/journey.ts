@@ -1,4 +1,4 @@
-import { inRange, type JourneyResult } from './utils';
+import { inRange, type JourneyLeg, type JourneyResult } from './utils';
 
 export const DURATION_STEP = 5;
 
@@ -20,6 +20,15 @@ export const trainTypeOptions: { key: TrainTypeKey; label: string; labelId: stri
   { key: 'bus', label: 'Ratatyöbussi', labelId: 'bus-label', types: ['JLA', 'BLV'] },
   { key: 'railCar', label: 'Kiskobussi', labelId: 'railcar-label', types: ['HDM'] },
 ];
+
+const BICYCLE_PRODUCT = 'BICYCLE_ALLOTMENT';
+// Commuter trains take bikes without a reservation, so they have no allotment to count.
+const BIKE_FREE_TRAIN_TYPES = ['LOL'];
+
+const legHasBikeSpot = (leg: JourneyLeg) => {
+  const allotment = (leg.productAttributes ?? []).find((product) => product.name === BICYCLE_PRODUCT);
+  return allotment ? allotment.availability > 0 : BIKE_FREE_TRAIN_TYPES.includes(leg.trainType);
+};
 
 export const defaultTrainTypeFilters: TrainTypeFilters = {
   pendolino: true,
@@ -52,6 +61,7 @@ export interface JourneyFilterCriteria {
   changeCount: string;
   trainTypes: TrainTypeFilters;
   hideSoldOut: boolean;
+  requireBikeSpots: boolean;
   departureTime: TimeRange;
   arrivalTime: TimeRange;
   allowedDepartureDays: number[];
@@ -76,6 +86,8 @@ export const filterJourneys = (results: JourneyResult[], criteria: JourneyFilter
 
     const soldOut = criteria.hideSoldOut && result.error === 'SOLD_OUT';
 
+    const matchesBikes = !criteria.requireBikeSpots || (legs.length > 0 && legs.every(legHasBikeSpot));
+
     const matchesTime =
       inRange(result.departureTime.substring(11, 16), criteria.departureTime.start, criteria.departureTime.end) &&
       inRange(result.arrivalTime.substring(11, 16), criteria.arrivalTime.start, criteria.arrivalTime.end);
@@ -85,7 +97,7 @@ export const filterJourneys = (results: JourneyResult[], criteria: JourneyFilter
     const duration = getDurationMinutes(result);
     const matchesDuration = !criteria.durationRange || (duration >= criteria.durationRange[0] && duration <= criteria.durationRange[1]);
 
-    return matchesType && matchesTransfers && !soldOut && matchesTime && matchesDays && matchesDuration;
+    return matchesType && matchesTransfers && !soldOut && matchesBikes && matchesTime && matchesDays && matchesDuration;
   });
 
 export const sortJourneys = (results: JourneyResult[], sort: SortKey, reverse: boolean) =>

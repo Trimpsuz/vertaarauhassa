@@ -17,6 +17,7 @@ export interface JourneyLeg {
   commercialLineIdentifier: string;
   trainTypeName?: string;
   busLineId?: string;
+  productAttributes?: { name: string; attribute?: string; availability: number }[];
   [key: string]: unknown;
 }
 
